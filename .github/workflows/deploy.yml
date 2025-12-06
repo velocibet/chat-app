@@ -1,4 +1,4 @@
-name: Deploy to Server
+name: Deploy All
 
 on:
   push:
@@ -6,17 +6,8 @@ on:
       - main
 
 jobs:
-  deploy:
-    runs-on: ubuntu-latest
+  backend:
+    uses: ./backend-deploy.yml
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      - name: Set up SSH
-        uses: webfactory/ssh-agent@v0.9.1
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Run deploy script on server
-        run: ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} 'bash -s' < ./deploy.sh
+  frontend:
+    uses: ./frontend-deploy.yml
