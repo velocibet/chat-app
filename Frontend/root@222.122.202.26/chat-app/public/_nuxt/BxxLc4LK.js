@@ -1,1 +1,0 @@
-import{ac as v,r as e}from"./CJ4QiOoU.js";const i=v("auth",()=>{const l=e(null),u=e(null),n=e(null),a=e(!1);function t(s,o,c){l.value=s,u.value=c,n.value=o,a.value=!!s}function r(){l.value=null,u.value=null,n.value=null,a.value=!1}return{username:l,userid:n,loggedIn:a,nickname:u,setUser:t,clearUser:r}});export{i as u};

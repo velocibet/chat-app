@@ -1,1 +1,0 @@
-import{a8 as o,r as n}from"./9hwllV1j.js";const f=o("auth",()=>{const e=n(null),u=n(null),l=n(!1);function a(s,t){e.value=s,u.value=t,l.value=!!s}function r(){e.value=null,u.value=null,l.value=!1}return{username:e,userid:u,loggedIn:l,setUser:a,clearUser:r}});export{f as u};

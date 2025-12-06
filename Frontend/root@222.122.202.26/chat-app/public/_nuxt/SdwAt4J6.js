@@ -1,1 +1,0 @@
-import{g as t,c as o,a as n,F as r,o as s}from"./CJ4QiOoU.js";const u=t({__name:"security",setup(a){return(l,e)=>(s(),o(r,null,[e[0]||(e[0]=n("h1",null,"보안 설정",-1)),e[1]||(e[1]=n("p",null,"없음 ㅅㄱ띠 설정 하지 마세용",-1))],64))}});export{u as default};

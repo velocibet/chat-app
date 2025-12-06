@@ -1,1 +1,0 @@
-import{g as t,c as o,a as n,F as a,o as r}from"./CJ4QiOoU.js";const m=t({__name:"index",setup(s){return(l,e)=>(r(),o(a,null,[e[0]||(e[0]=n("h1",null,"기본 설정",-1)),e[1]||(e[1]=n("p",null,"없음 ㅅㄱ띠 설정 하지 마세용",-1))],64))}});export{m as default};
