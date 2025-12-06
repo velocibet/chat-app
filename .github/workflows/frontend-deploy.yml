@@ -23,7 +23,7 @@ jobs:
           script: |
             # 서버에서 전체 파일 받기
             mkdir -p /var/www/chat-app/Frontend
-            rsync -avz ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Frontend/
+            rsync -avz $GITHUB_WORKSPACE/Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Frontend/
 
             cd /var/www/chat-app/Frontend
 
@@ -33,4 +33,3 @@ jobs:
 
             # PM2로 서버 실행/재시작
             pm2 restart index || pm2 start dist/server/index.mjs --name index
-          host_key_check: false
