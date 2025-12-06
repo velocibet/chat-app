@@ -1,19 +1,25 @@
 name: Frontend Deploy
-
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
 
 jobs:
   deploy-frontend:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Copy entire frontend to server
+      - name: Start ssh-agent and add key
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Copy frontend to server (rsync)
+        run: |
+          rsync -avz --delete ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Frontend/
+
+      - name: Remote build & restart (ssh)
         uses: appleboy/ssh-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
@@ -21,9 +27,8 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            mkdir -p /var/www/chat-app/Frontend
-            rsync -avz $GITHUB_WORKSPACE/Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Frontend/
+            set -e
             cd /var/www/chat-app/Frontend
             npm install
             npm run build
-            pm2 restart index || pm2 start .output/server/index.mjs --name index
+            pm2 restart chat-frontend || pm2 start .output/server/index.mjs --name chat-frontend
