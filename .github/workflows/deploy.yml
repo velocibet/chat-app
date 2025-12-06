@@ -26,14 +26,18 @@ jobs:
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
 
+      - name: Create directories on server
+        run: |
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /var/www/chat-app/Backend /var/www/chat-app/Frontend"
+
       # 4. Backend 배포
       - name: Deploy Backend
         run: |
-          rsync -avz ./Backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Backend/
+          rsync -avz --rsync-path="mkdir -p /var/www/chat-app/Backend && rsync" ./Backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Backend/
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app/Backend && npm install && npm run build && pm2 restart chat-app || pm2 start dist/main.js --name chat-app"
 
       # 5. Frontend 배포
       - name: Deploy Frontend
         run: |
-          rsync -avz ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Frontend/
+          rsync -avz --rsync-path="mkdir -p /var/www/chat-app/Frontend && rsync" ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Frontend/
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app/Frontend && npm install && npm run build && pm2 restart index || pm2 start dist/server/index.mjs --name index"
