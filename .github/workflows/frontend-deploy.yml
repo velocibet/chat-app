@@ -33,3 +33,4 @@ jobs:
 
             # PM2로 서버 실행/재시작
             pm2 restart index || pm2 start dist/server/index.mjs --name index
+          host_key_check: false

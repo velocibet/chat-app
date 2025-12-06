@@ -33,3 +33,4 @@ jobs:
 
             # PM2로 서버 실행/시작
             pm2 restart chat-app || pm2 start dist/main.js --name chat-app
+          host_key_check: false
