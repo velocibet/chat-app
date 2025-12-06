@@ -1,0 +1,39 @@
+name: Deploy App
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 레포지토리 체크아웃
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2. SSH 에이전트 시작
+      - name: Start ssh-agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # 3. 서버 호스트 키 등록
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      # 4. Backend 배포
+      - name: Deploy Backend
+        run: |
+          rsync -avz ./Backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Backend/
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app/Backend && npm install && npm run build && pm2 restart chat-app || pm2 start dist/main.js --name chat-app"
+
+      # 5. Frontend 배포
+      - name: Deploy Frontend
+        run: |
+          rsync -avz ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Frontend/
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app/Frontend && npm install && npm run build && pm2 restart index || pm2 start dist/server/index.mjs --name index"
