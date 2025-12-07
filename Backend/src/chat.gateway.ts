@@ -13,10 +13,7 @@ import { pool } from './database';
 
 @WebSocketGateway({
   cors: {
-    origin: [
-      'http://222.122.202.26:3000',
-      'http://222.122.202.26'
-    ],
+    origin: true,
     credentials: true,
   },
 })

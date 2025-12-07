@@ -14,10 +14,7 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: [
-      'http://222.122.202.26:3000',
-      'http://222.122.202.26'
-    ],
+    origin: true,
     credentials: true,
   });
   app.setGlobalPrefix('api');
@@ -25,7 +22,7 @@ async function bootstrap() {
   app.use(cookieParser());
   app.use(
     session({
-      secret: 'SexOnTheBitch',
+      secret: process.env.SESSION_SECRET,
       resave: false,
       saveUninitialized: false,
       cookie: {

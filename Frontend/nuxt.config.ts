@@ -4,15 +4,20 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 export default defineNuxtConfig({
   modules: ['@pinia/nuxt'],
   ssr: false,
+  nitro: {
+    preset: 'static'
+  },
   app: {
-    baseURL: './'
+    baseURL: './',
+    buildAssetsDir: '_nuxt/',
+    cdnURL: './' 
   },
   vite: {
     plugins: [tsconfigPaths()]
   },
   runtimeConfig: {
     public: {
-      apiBase: 'http://222.122.202.26:8000'
+      apiBase: process.env.NUXT_PUBLIC_API_BASE
     }
   },
   css: [
