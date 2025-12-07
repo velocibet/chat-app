@@ -3,6 +3,7 @@ import { useAuthStore } from '~/stores/auth';
 
 const authStore = useAuthStore();
 const config = useRuntimeConfig();
+const router = useRouter();
 
 interface CheckLoginResponse {
     loggedIn: boolean
@@ -20,6 +21,7 @@ async function checkLogin() {
 
         if (error.value) {
             console.log(error.value);
+            router.push("/");
             return
         }
 
@@ -28,6 +30,7 @@ async function checkLogin() {
         }
     } catch (err) {
         console.error(err);
+        router.push("/");
     }
 }
     

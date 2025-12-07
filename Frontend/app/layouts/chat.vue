@@ -6,19 +6,22 @@ import UserList from '~/components/UserList.vue';
 
 const sidebarVisible = ref(false);
 
-// 모바일에서 사이드바 열기/닫기
 function toggleSidebar() {
   sidebarVisible.value = !sidebarVisible.value;
 }
 </script>
 
 <template>
-  <div class="main-container">
+  <div class="chat-layout">
     <UserCheck />
 
-    <button class="mobile-toggle" @click="toggleSidebar">☰</button>
+    <!-- <button class="mobile-toggle" @click="toggleSidebar">☰</button> -->
 
-    <aside :class="{ 'mobile-open': sidebarVisible }">
+    <!-- <aside class="chat-aside" :class="{ 'mobile-open': sidebarVisible }">
+      <UserList />
+    </aside> -->
+
+    <aside class="chat-aside">
       <UserList />
     </aside>
 

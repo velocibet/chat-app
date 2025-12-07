@@ -29,6 +29,18 @@ input:focus {
   opacity: 1;
 }
 
+ul {
+  padding: 0;
+  margin: 0;
+}
+
+li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+
 /* 기본 UI */
 .primary-input {
   background: #ffffff05;

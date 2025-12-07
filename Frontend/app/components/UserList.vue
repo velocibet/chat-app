@@ -11,7 +11,6 @@ const route = useRoute();
 const socket = io(`${config.public.apiBase}`, { withCredentials: true });
 
 const friends = ref<{ userid: string; username: string }[]>([]);
-// --- 아바타 캐싱 ---
 const userAvatars = ref<Record<string, string>>({});
 
 async function fetchAvatar(userid: string) {
@@ -29,7 +28,6 @@ async function fetchAvatar(userid: string) {
   }
 }
 
-// 친구 목록 로딩될 때 자동으로 아바타 선로딩
 watch(
   friends,
   (list) => {
@@ -50,11 +48,13 @@ async function fetchFriends() {
     );
     if (error.value) {
       console.error('친구 목록 불러오기 실패:', error.value);
+      router.push('/');
       return;
     }
     friends.value = data.value?.friends || [];
   } catch (err) {
     console.error('HTTP 요청 에러:', err);
+    router.push('/');
   }
 }
 
@@ -89,8 +89,8 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="user-list" role="navigation" aria-label="Direct messages">
-    <h3 style="margin:0 0 8px 0; color:var(--text);">다이렉트 메세지</h3>
+  <nav class="user-list" aria-label="Direct messages">
+    <h3>다이렉트 메세지</h3>
 
     <div class="user-list-scroll">
       <ul>
@@ -109,10 +109,10 @@ onBeforeUnmount(() => {
       </ul>
     </div>
 
-    <div class="user-list-footer" style="margin-top:12px; display:flex; gap:8px; flex-direction:column;">
-      <button class="btn-outline" @click="router.push('/chat')">친구 추가</button>
-      <button class="btn-outline" @click="goSettings">설정</button>
+    <div class="user-list-footer">
+      <button class="primary-button" @click="router.push('/chat')">친구 추가</button>
+      <button class="primary-button" @click="goSettings">설정</button>
       <UserInfo />
     </div>
-  </div>
+  </nav>
 </template>

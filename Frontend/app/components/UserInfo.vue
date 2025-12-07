@@ -57,20 +57,20 @@ function goSettings() {
 
 <template>
   <div class="user-info" role="region" aria-label="내 정보">
-    <div class="me" style="display:flex; align-items:center; gap:10px;">
+    <div class="me">
       <div class="user-avatar">
         <img :src="avatarUrl" alt="avatar" />
         </div>
       <div>
-        <p @click="showProfile = true" style="cursor:pointer; margin:0; color:var(--text); font-weight:700;">
-          {{ authStore.username || '익명' }}
+        <p class="name" @click="showProfile = true">
+          {{ authStore.username }}
         </p>
-        <p style="margin:0; font-size:12px; color:var(--muted);">온라인</p>
+        <p class="condition">온라인</p>
       </div>
     </div>
 
-    <div style="display:flex; gap:8px; align-items:center;">
-      <button @click="logout" class="btn" style="padding:6px 8px; border-radius:8px; color:var(--text); background:transparent;">로그아웃</button>
+    <div class="logout" @click="logout">
+      로그아웃
     </div>
 
     <ProfilePopup
