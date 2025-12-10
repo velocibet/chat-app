@@ -1,9 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from 'vue';
 import { useAuthStore } from '~/stores/auth';
+import { useAlarmStore } from '~/stores/alarm';
+import { io } from 'socket.io-client';
 
-const authStore = useAuthStore();
 const config = useRuntimeConfig();
+const socket = io(`${config.public.apiBase}`);
+const authStore = useAuthStore();
+const alarmStore = useAlarmStore();
 const router = useRouter();
 const route = useRoute();
 
@@ -31,6 +35,45 @@ function onImgError(event: Event) {
   target.src = `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
 }
 
+onMounted(() => {
+  socket.on('joinedRoom', (roomName) => {
+    alert(`${roomName} 방에 입장했습니다.`);
+  });
+
+  socket.on('previousMessage', (msgs) => {
+    let alarms : number = 0;
+    let senderId : number = 0;
+    for (const item of msgs) {
+      if (item.status == "delivered") {
+        alarms ++;
+        senderId = item.sender_id;
+      };
+    };
+
+    alarmStore.setAlarms(senderId, alarms);
+  });
+
+  socket.on('newMessage', (msg) => {
+    alarmStore.addAlarm(msg[0].sender_id);
+  });
+});
+
+watch(() => authStore.friends,
+  (newVal) => {
+    if (!Array.isArray(newVal)) return;
+
+    friends.value = newVal;
+
+    for (const item of friends.value) {
+      socket.emit('joinDirectRoom', {
+        userId1: authStore.userid,
+        userId2: item.id
+      });
+    }
+  },
+  { immediate: true }
+);
+
 watchEffect(() => {
   friends.value = authStore.friends;
 })
@@ -50,6 +93,9 @@ watchEffect(() => {
             <div class="user-meta">
               <div class="user-name">{{ item.username }}</div>
               <div class="user-last">대화 시작하기</div>
+            </div>
+            <div>
+              {{ alarmStore.alarms[item.id] }}
             </div>
           </button>
         </li>

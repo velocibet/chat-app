@@ -17,6 +17,7 @@ export class ChatGateway {
 
     client.join(roomName);
 
+    const checkStatus = await this.chatService.checkStatus(userId1, userId2, roomName);
     const messages = await this.chatService.getMessages(roomName);
 
     client.emit('previousMessage', messages);
@@ -32,9 +33,10 @@ export class ChatGateway {
     const roomName = [fromId, toId].sort((a, b) => a - b).join('_');
 
     // DB 행 추가
-    const messages = await this.chatService.sendMessage(fromId, toId, content, roomName);
+    const message = await this.chatService.sendMessage(fromId, toId, content, roomName);
 
-    client.to(roomName).emit('previousMessage', messages);
-    client.emit('previousMessage', messages);
+    // 새로운 메세지 emit
+    client.to(roomName).emit('newMessage', message);
+    client.emit('newMessage', message);
   }
 }

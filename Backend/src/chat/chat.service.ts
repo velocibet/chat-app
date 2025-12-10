@@ -11,9 +11,9 @@ export class ChatService {
         );
 
         const [rows] = await pool.execute<RowDataPacket[]>(
-            'SELECT * FROM messages WHERE room_name = ?',
-            [roomName]
-        )
+            'SELECT * FROM messages WHERE id = ?',
+            [result.insertId]
+        );
 
         return rows;
     }
@@ -25,5 +25,12 @@ export class ChatService {
         )
 
         return rows;
+    }
+
+    async checkStatus(fromId : number, toId: Number, roomName: string) {
+        const [rows] = await pool.execute(
+            'UPDATE messages SET status = ? WHERE sender_id = ? AND receiver_id = ? AND room_name = ?',
+            ['delivered', toId, fromId, roomName]
+        );
     }
 }

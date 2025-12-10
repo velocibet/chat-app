@@ -1,0 +1,16 @@
+
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  max-height: 100vh;
+}
+
+.message-container {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  width: 100%;
+  padding: 10px;
+  box-sizing: border-box;
+}

@@ -5,6 +5,10 @@
   overflow: hidden;
 }
 
+.chat-layout main {
+  flex: 1
+}
+
 .chat-layout .chat-aside {
   width: 300px;
   height: 100%;

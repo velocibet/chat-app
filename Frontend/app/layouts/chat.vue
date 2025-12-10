@@ -1,13 +1,12 @@
 <script lang="ts" setup>
 import '@/assets/css/chat-layout.css';
 
-const config = useRuntimeConfig();
 const sidebarVisible = ref(false);
-const friends : any = ref([]);
 
 function toggleSidebar() {
   sidebarVisible.value = !sidebarVisible.value;
 }
+
 </script>
 
 <template>

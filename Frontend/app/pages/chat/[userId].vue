@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { io } from 'socket.io-client';
+import { useAlarmStore } from '~/stores/alarm';
 import { useAuthStore } from '~/stores/auth';
 import '@/assets/css/chat-room.css';
 
@@ -7,6 +8,7 @@ const router = useRouter();
 const route = useRoute();
 const config = useRuntimeConfig();
 const authStore = useAuthStore();
+const alarmStore = useAlarmStore();
 
 const socket = io(`${config.public.apiBase}`);
 
@@ -24,6 +26,7 @@ const friendId = route.params.userId as string;
 const messages = ref<Message[]>([]);
 const friendNick = ref<string>('');
 const input = ref<string>('');
+const messageContainer = ref<HTMLElement | null>(null);
 
 definePageMeta({
   layout: 'chat',
@@ -61,7 +64,8 @@ async function sendMessage() {
     fromId: authStore.userid, toId: friendId, content: input.value
   });
 
-  alert("메세지를 보냈습니다.")
+  input.value = '';
+  return;
 }
 
 onMounted(() => {
@@ -72,27 +76,39 @@ onMounted(() => {
     userId1: authStore.userid, userId2: friendId
   });
 
-  socket.on('joinedRoom', (roomName) => {
-    alert(`${roomName} 방에 입장했습니다.`);
-  });
-
   socket.on('previousMessage', (msgs) => {
     if (!msgs) return;
     messages.value = msgs
+  })
+
+  socket.on('newMessage', (msg) => {
+    if (!msg) return;
+    messages.value.push(msg[0]);
   })
 
   // 보내는 사람 확인
   for (const fri of authStore.friends){
     if (fri.id == Number(friendId)) friendNick.value = fri.nickname;
   }
-})
+
+  // 알람 수 초기화
+  alarmStore.setAlarms(Number(
+    friendId
+  ), 0);
+});
+
+watch(messages, async () => {
+  await nextTick();
+  if (messageContainer.value) {
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+  }
+});
 
 </script>
 
 <template>
   <section class="chat-container">
-    <div>
-      <h3>메세지 내용</h3>
+    <div class="message-container" ref="messageContainer">
       <p v-for="item in messages" :key="item.id">
         {{ item.sender_id === authStore.userid ? authStore.nickname : friendNick }} : {{ item.content }} - {{ formatKoreanTime(item.created_at) }}
       </p>
