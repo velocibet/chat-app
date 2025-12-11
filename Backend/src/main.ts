@@ -34,7 +34,7 @@ async function bootstrap() {
   ));
 
   app.use('/uploads/profiles', express.static('uploads/profiles'));
-  app.use(cookieParser());
+  app.use(cookieParser(process.env.SESSION_SECRET));
   app.use(
     session({
       secret: process.env.SESSION_SECRET,
