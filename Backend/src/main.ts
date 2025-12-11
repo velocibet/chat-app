@@ -4,12 +4,10 @@ import { AppModule } from './app.module';
 
 import * as express from 'express';
 import * as dotenv from 'dotenv';
-dotenv.config();
+dotenv.config()
 
 const cookieParser = require('cookie-parser');
 const session = require('express-session');
-
-console.log(process.env.SESSION_SECRET)
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
