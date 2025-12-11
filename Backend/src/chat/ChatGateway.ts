@@ -3,8 +3,11 @@ import { ChatService } from './chat.service';
 import { Socket } from 'socket.io';
 import { joinDirectRoom, sendMessage, previousMessage } from './dto/chat.dto';
 
-@WebSocketGateway({ cors: true })
-export class ChatGateway {
+@WebSocketGateway({ cors: {
+      origin: 'http://222.122.202.26:3000',
+      credentials: true,
+    }, })
+  export class ChatGateway {
   constructor(private readonly chatService: ChatService) {}
 
   @SubscribeMessage('joinDirectRoom')
