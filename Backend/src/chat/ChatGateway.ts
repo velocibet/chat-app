@@ -4,6 +4,7 @@ import { Socket } from 'socket.io';
 import { joinDirectRoom, sendMessage, previousMessage } from './dto/chat.dto';
 
 @WebSocketGateway({ cors: {
+      //origin: 'http://localhost:3000',
       origin: 'http://222.122.202.26:3000',
       credentials: true,
     }, })
