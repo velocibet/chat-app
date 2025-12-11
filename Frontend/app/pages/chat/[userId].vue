@@ -10,7 +10,10 @@ const config = useRuntimeConfig();
 const authStore = useAuthStore();
 const alarmStore = useAlarmStore();
 
-const socket = io(`${config.public.apiBase}`);
+const socket = io(`${config.public.apiBase}`, {
+  transports: ['websocket', 'polling'],
+  withCredentials: true,
+});
 
 interface Message {
   id: string | number;
