@@ -5,9 +5,7 @@ export default defineNuxtConfig({
   modules: ['@pinia/nuxt'],
   ssr: false,
   app: {
-    baseURL: './',
-    buildAssetsDir: '_nuxt/',
-    cdnURL: './' 
+    baseURL: './'
   },
   vite: {
     plugins: [tsconfigPaths()]
