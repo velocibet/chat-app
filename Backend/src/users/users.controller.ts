@@ -3,7 +3,8 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
 import { RegisterDto, LoginDto, FriendRequestDto, UpdateDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
 import type { Request, Response } from 'express';
-import sharp from 'sharp';
+// 이건 부자가 되서 쓰자.. 서버 CPU 가 좆구려서 안돌아간다..
+// import sharp from 'sharp';
 import fs from 'fs';
 import * as path from 'path';
 
@@ -68,32 +69,56 @@ export class UsersController {
     });
   }
 
+  // @Post('update')
+  // @UseInterceptors(FileInterceptor('file'))
+  // async getUpdate(@UploadedFile() file: Express.Multer.File, @Body() body : UpdateDto) {
+  //   const { userid, username, nickname } = body;
+    
+  //   if (!file) throw new BadRequestException('파일 선택 후 전송하세요.');
+  //   if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드 가능합니다.');
+  //   if (file.size > 2 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
+
+  //   this.usersService.updateProfile(userid, username, nickname);
+    
+  //   const webpBuffer = await sharp(file.buffer)
+  //     .webp({ quality: 80 }) // 0 ~ 100
+  //     .toBuffer();
+
+  //   const uploadDir = path.join(process.cwd(), 'uploads/profiles');
+  //   const savePath = path.join(uploadDir, `${userid}.webp`);
+
+  //   if (fs.existsSync(savePath)) {
+  //     fs.unlinkSync(savePath);
+  //   }
+
+  //   fs.writeFileSync(savePath, webpBuffer);
+    
+  //   return { ok: true };
+  // }
+
   @Post('update')
   @UseInterceptors(FileInterceptor('file'))
-  async getUpdate(@UploadedFile() file: Express.Multer.File, @Body() body : UpdateDto) {
+  async getUpdate(@UploadedFile() file: Express.Multer.File, @Body() body: UpdateDto) {
     const { userid, username, nickname } = body;
-    
+
     if (!file) throw new BadRequestException('파일 선택 후 전송하세요.');
     if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드 가능합니다.');
     if (file.size > 2 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
 
     this.usersService.updateProfile(userid, username, nickname);
-    
-    const webpBuffer = await sharp(file.buffer)
-      .webp({ quality: 80 }) // 0 ~ 100
-      .toBuffer();
 
     const uploadDir = path.join(process.cwd(), 'uploads/profiles');
-    const savePath = path.join(uploadDir, `${userid}.webp`);
+    const savePath = path.join(uploadDir, `${userid}.webp`); // 파일명만 webp로 변경
 
     if (fs.existsSync(savePath)) {
       fs.unlinkSync(savePath);
     }
 
-    fs.writeFileSync(savePath, webpBuffer);
-    
+    fs.writeFileSync(savePath, file.buffer); // 실제 변환 없이 그대로 저장
+
     return { ok: true };
   }
+
 
   @Get('checkProfileImage')
   async checkProfileImage(@Req() req: Request) {
