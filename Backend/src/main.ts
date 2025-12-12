@@ -4,7 +4,8 @@ import { AppModule } from './app.module';
 
 import * as express from 'express';
 import * as dotenv from 'dotenv';
-dotenv.config()
+import path from 'path';
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const cookieParser = require('cookie-parser');
 const session = require('cookie-session');
