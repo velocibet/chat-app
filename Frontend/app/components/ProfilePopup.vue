@@ -10,8 +10,6 @@
 </template>
 
 <script lang="ts" setup>
-import { defineProps, defineEmits } from 'vue'
-
 interface Props {
   modelValue: boolean
   username: string

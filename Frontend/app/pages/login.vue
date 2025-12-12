@@ -17,7 +17,7 @@
 
     async function getLogin() {
         try {
-            const data : any = await $fetch(`http://222.122.202.26:8000/api/users/login`, {
+            const data : any = await $fetch(`${config.public.apiBase}/api/users/login`, {
                 method: "POST",
                 credentials: 'include',
                 body: {
