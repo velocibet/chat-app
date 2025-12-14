@@ -19,6 +19,7 @@ export class UsersController {
 
   @Post('login')
   async getLogin(@Body() body : LoginDto, @Req() req: Request) {
+    console.log("로그인 시도중입니다.")
     const result = await this.usersService.login(body);
 
     // 세션 발급
