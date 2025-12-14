@@ -15,3 +15,4 @@ npm install
 npm run build
 pm2 restart frontend || pm2 start ecosystem.config.cjs --only frontend
 
+
