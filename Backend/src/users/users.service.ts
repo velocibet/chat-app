@@ -91,6 +91,7 @@ export class UsersService {
       }
 
       const user = users[0];
+      console.log(user);
 
       // 비밀번호 검증
       const passwordValid = await argon2.verify(user.password, password);
