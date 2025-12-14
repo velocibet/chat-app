@@ -40,4 +40,4 @@ jobs:
       - name: Deploy Frontend
         run: |
           rsync -avz --rsync-path="mkdir -p /var/www/chat-app/Frontend && rsync" ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app/Frontend/
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app/Frontend && npm install && npm run build && pm2 restart index || pm2 start ecosystem.config.js --only index
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app/Frontend && npm install && npm run build && pm2 restart frontend || pm2 start ecosystem.config.js --only frontend"
