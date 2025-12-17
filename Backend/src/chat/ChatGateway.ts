@@ -1,13 +1,58 @@
-import { WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
+import { WebSocketServer, WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { ChatService } from './chat.service';
-import { Socket } from 'socket.io';
+import { Server, Socket } from 'socket.io';
 import { joinDirectRoom, sendMessage, previousMessage, deleteMessage } from './dto/chat.dto';
+
+interface friend {
+    id : string;
+    username: string;
+    nickname: string;
+}
 
 @WebSocketGateway({ cors: {
       origin: true
     }, })
   export class ChatGateway {
+    @WebSocketServer()
+    server: Server;
   constructor(private readonly chatService: ChatService) {}
+
+  private connectedUsers = new Map<string, string>();
+
+  handleConnection(socket: Socket) {
+    // 클라이언트가 연결할 때 userId 전달
+    const userId = socket.handshake.query.userId as string;
+    if (userId) {
+      this.connectedUsers.set(userId, socket.id);
+      console.log(`User ${userId} connected, socketId: ${socket.id}`);
+    }
+  }
+
+  handleDisconnect(socket: Socket) {
+    // 연결 끊기면 매핑에서 제거
+    for (const [userId, sId] of this.connectedUsers.entries()) {
+      if (sId === socket.id) {
+        this.connectedUsers.delete(userId);
+        console.log(`User ${userId} disconnected`);
+        break;
+      }
+    }
+  }
+
+  emitFriendAccepted(body : friend) {
+    const { id, username, nickname } = body;
+    const socketId = this.connectedUsers.get(String(id));
+    
+    if (!socketId) {
+      return;
+    }
+
+    this.server.to(socketId).emit('friendAccepted', {
+      id : id,
+      username: username,
+      nickname: nickname
+    });
+  }
 
   @SubscribeMessage('joinDirectRoom')
   async handleJoinPrivateRoom(

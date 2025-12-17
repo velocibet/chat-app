@@ -10,7 +10,7 @@ const config = useRuntimeConfig();
 const authStore = useAuthStore();
 const alarmStore = useAlarmStore();
 
-const socket = io(`${config.public.wsBase}`);
+const socket = useState<any>('socket');
 
 interface Message {
   id: string | number;
@@ -45,7 +45,7 @@ const closeMenu = () => {
 const deleteMessage = (item: Message) => {
   if (!confirm("정말 메세지를 삭제하시겠습니까?")) return;
   closeMenu();
-  socket.emit('deleteMessage', {
+  socket.value.emit('deleteMessage', {
     messageId: item.id,
     userId1 : authStore.userid,
     userId2 : friendId,
@@ -105,7 +105,7 @@ async function sendMessage() {
   const isExistingFriend = friendMiddleware();
   if (!isExistingFriend) return;
 
-  socket.emit('sendMessage', {
+  socket.value.emit('sendMessage', {
     fromId: authStore.userid, toId: friendId, content: input.value
   });
 
@@ -133,28 +133,40 @@ const getAvatarUrl = (item: Message) => {
   return `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
 }
 
-onMounted(() => {
+async function downScroll() {
+  await nextTick();
+  if (messageContainer.value) {
+    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
+  }
+}
+
+onMounted(async() => {
+  console.log(socket.value)
   const isExistingFriend = friendMiddleware();
   if (!isExistingFriend) return;
 
-  socket.emit('joinDirectRoom', {
+  socket.value.emit('joinDirectRoom', {
     userId1: authStore.userid, userId2: friendId
   });
 
-  socket.emit('readMessage', {
+  socket.value.emit('readMessage', {
     userId1: authStore.userid, userId2: friendId
   });
 
-  socket.on('previousMessage', (msgs) => {
+  socket.value.on('previousMessage', async (msgs : any) => {
     if (!msgs) return;
     messages.value = msgs
+
+    await downScroll();
   })
 
-  socket.on('newMessage', (msg) => {
+  socket.value.on('newMessage', async (msg : any) => {
     if (!msg) return;
     messages.value.push(msg[0]);
 
-    socket.emit('readMessage', {
+    await downScroll();
+
+    socket.value.emit('readMessage', {
       userId1: authStore.userid, userId2: friendId
     });
   })
@@ -168,13 +180,6 @@ onMounted(() => {
   alarmStore.setAlarms(Number(
     friendId
   ), 0);
-});
-
-watch(messages, async () => {
-  await nextTick();
-  if (messageContainer.value) {
-    messageContainer.value.scrollTop = messageContainer.value.scrollHeight;
-  }
 });
 
 </script>

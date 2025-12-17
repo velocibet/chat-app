@@ -6,20 +6,18 @@ const sidebarVisible = ref(false);
 function toggleSidebar() {
   sidebarVisible.value = !sidebarVisible.value;
 }
-
 </script>
 
 <template>
   <div class="chat-layout">
     <UserCheck />
 
-    <!-- <button class="mobile-toggle" @click="toggleSidebar">☰</button> -->
+    <!-- 모바일 전용 토글 버튼 -->
+    <button class="mobile-toggle" @click="toggleSidebar">
+      ☰
+    </button>
 
-    <!-- <aside class="chat-aside" :class="{ 'mobile-open': sidebarVisible }">
-      <UserList />
-    </aside> -->
-
-    <aside class="chat-aside">
+    <aside class="chat-aside" :class="{ open: sidebarVisible }">
       <UserList />
     </aside>
 

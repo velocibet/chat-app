@@ -15,7 +15,7 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const expressApp = app.getHttpAdapter().getInstance() as express.Express;
 
-  // 클라우드플레어 프록시 신뢰
+  // nginx 프록시 신뢰
   expressApp.set('trust proxy', 1);
 
   app.enableCors({
@@ -56,7 +56,7 @@ async function bootstrap() {
         httpOnly: true,
         secure: true,
         sameSite: 'none',
-        maxAge: 1000 * 60 * 60,
+        maxAge: 1000 * 60 * 60 * 12,
       },
     }),
   );

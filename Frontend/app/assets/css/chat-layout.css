@@ -151,3 +151,54 @@
   margin: auto 0;
   cursor: pointer;
 }
+
+.request-container {
+  padding-left: 8px;
+}
+
+.request-item {
+  display: flex;
+}
+
+.mobile-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 12px;
+  z-index: 1001;
+  font-size: 24px;
+  background: none;
+  border: none;
+  color: white;
+}
+
+.chat-main {
+  flex: 1;
+}
+
+@media (max-width: 768px) {
+  .chat-layout main {
+    position: absolute;
+    width: 100vw;
+    height: 100vh;
+    left: 0;
+    top: 0;
+  }
+
+  .chat-aside {
+    position: fixed;
+    top: 0;
+    left: -300px;
+    height: 100%;
+    z-index: 1000;
+    transition: left 0.25s ease;
+  }
+
+  .chat-aside.open {
+    left: 0;
+  }
+
+  .mobile-toggle {
+    display: block;
+  }
+}

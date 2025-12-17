@@ -30,5 +30,9 @@ export const useAuthStore = defineStore('auth', () => {
     nickname.value = nick
   }
 
-  return { username, userid, nickname, friends, setUser, clearUser, setNick };
+  function addFriend(body : Friend) {
+    friends.value.push(body);
+  }
+
+  return { username, userid, nickname, friends, setUser, clearUser, setNick, addFriend };
 })

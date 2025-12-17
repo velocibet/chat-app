@@ -1,6 +1,7 @@
 import { UseInterceptors, UploadedFile, Controller, Get, Post, Body, Req, Res, Param, ValidationPipe , BadRequestException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
+import { ChatGateway } from '../chat/ChatGateway';
 import { RegisterDto, LoginDto, FriendRequestDto, UpdateDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
 import type { Request, Response } from 'express';
 // 이건 부자가 되서 쓰자.. 서버 CPU 가 좆구려서 안돌아간다..
@@ -10,7 +11,7 @@ import * as path from 'path';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(private readonly usersService: UsersService, private gateway: ChatGateway) {}
 
   @Post('register')
   async getRegister(@Body() body : RegisterDto) {
@@ -19,42 +20,73 @@ export class UsersController {
 
   @Post('login')
   async getLogin(@Body() body : LoginDto, @Req() req: Request) {
-    const result = await this.usersService.login(body);
+    const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip;
+    const agent = req.headers['user-agent']!;
+    
+    try {
+      const result = await this.usersService.login(body);
 
-    // 세션 발급
-    req.session.user = {
-      userid: result.userId,
-      username: result.username,
-      nickname: result.nickname
+      // 세션 발급
+      req.session.user = {
+        userid: result.userId,
+        username: result.username,
+        nickname: result.nickname
+      }
+
+      await this.usersService.insertLoginLog(
+        result.username, ip!, agent, 1
+      );
+
+      return result;
+    } catch(err) {
+      await this.usersService.insertLoginLog(
+        body.username, ip!, agent, 0
+      );
+
+      throw err;
     }
-
-    return result
   }
 
   @Get('checkLogin')
   async checkLogin(@Req() req: Request) {
-    if (!req.session.user) {
-      return false;
-    }
-
-    const friendList = await this.usersService.checkFriend(req.session.user.userid);
-    const user = await this.usersService.checkProfile(Number(req.session.user.userid));
+    const friendList = await this.usersService.checkFriend(req.session.user!.userid);
+    const user = await this.usersService.checkProfile(Number(req.session.user!.userid));
 
     return {user, friendList};
   }
 
   @Post('friend-request')
   async sendFriendRequest(@Body() body: FriendRequestDto, @Req() req: Request) {
-    if (!req.session.user) {
-      throw new BadRequestException('로그인 상태가 아닙니다.');
-    }
-
     const friend_request = {
-      userId: req.session.user.userid,
+      userId: req.session.user!.userid,
       friendName: body.friendName
     }
 
     return await this.usersService.sendFriendRequest(friend_request);
+  }
+
+  @Get('friend-receive')
+  async receiveFriend(@Req() req: Request) {
+    return this.usersService.getFriendRequests(req.session.user?.userid!);
+  }
+
+  @Post('request-reject')
+  async rejectRequest(@Body() body : { friendId : string }, @Req() req: Request) {
+    const { friendId } = body;
+    const userId = req.session.user?.userid!;
+
+    return this.usersService.rejectRequest(userId, friendId);
+  }
+
+  @Post('request-accept')
+  async acceptRequest(@Body() body : { friendId : string }, @Req() req: Request) {
+    const { friendId } = body;
+    const userId = req.session.user?.userid!;
+    const result = await this.usersService.acceptRequest(userId, friendId);
+
+    // await this.gateway.emitFriendAccepted(result.body);
+
+    return { ok : result.ok }
   }
 
   @Get('logout')
@@ -122,9 +154,7 @@ export class UsersController {
 
   @Get('checkProfileImage')
   async checkProfileImage(@Req() req: Request) {
-    if (!req.session.user) return
-
-    const userid = req.session.user.userid;
+    const userid = req.session.user!.userid;
     
     const uploadDir = path.join(process.cwd(), 'uploads/profiles');
     const savePath = path.join(uploadDir, `${userid}.webp`);

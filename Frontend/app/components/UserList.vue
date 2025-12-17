@@ -5,11 +5,11 @@ import { useAlarmStore } from '~/stores/alarm';
 import { io } from 'socket.io-client';
 
 const config = useRuntimeConfig();
-const socket = io(`${config.public.wsBase}`);
 const authStore = useAuthStore();
 const alarmStore = useAlarmStore();
 const router = useRouter();
 const route = useRoute();
+const socket = useState<any>('socket');
 
 const friends = ref<Friend[]>([]);
 const isNewMessage = ref<Record<number, boolean>>({});
@@ -37,64 +37,60 @@ function onImgError(event: Event) {
   target.src = `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
 }
 
-onMounted(() => {
-  // socket.on('joinedRoom', (roomName) => {
-  //   console.log(`${roomName} 방에 입장했습니다.`);
-  // });
+// 중복 등록 방지
+watch(
+  () => socket.value,
+  (s) => {
+    console.log(socket.value)
+    if (!s) return;
+    s.off('previousMessage');
+    s.off('newMessage');
 
-  socket.on('previousMessage', (msgs) => {
-    const last = msgs[msgs.length - 1];
-    const lastSender = last.sender_id;
-    const lastReceiver = last.receiver_id;
+    s.on('previousMessage', (msgs: any) => {
+      const last = msgs[msgs.length - 1];
+      const lastSender = last.sender_id;
+      const lastReceiver = last.receiver_id;
 
-    const partnerId = lastSender === authStore.userid ? lastReceiver : lastSender;
+      const partnerId =
+        lastSender === authStore.userid ? lastReceiver : lastSender;
 
-    if (lastSender === authStore.userid) {
-      alarmStore.setAlarms(partnerId, 0);
-      isNewMessage.value[partnerId] = false;
-      return;
-    }
-
-    let alarms = 0;
-    for (const item of msgs) {
-      if (item.status === "delivered" && item.sender_id !== authStore.userid) {
-        alarms++;
+      if (lastSender === authStore.userid) {
+        alarmStore.setAlarms(partnerId, 0);
+        isNewMessage.value[partnerId] = false;
+        return;
       }
-    }
 
-    if (alarms > 0) isNewMessage.value[partnerId] = true;
-    alarmStore.setAlarms(partnerId, alarms);
-  });
+      let alarms = 0;
+      for (const item of msgs) {
+        if (
+          item.status === 'delivered' &&
+          item.sender_id !== authStore.userid
+        ) {
+          alarms++;
+        }
+      }
 
+      if (alarms > 0) isNewMessage.value[partnerId] = true;
+      alarmStore.setAlarms(partnerId, alarms);
+    });
 
-  socket.on('newMessage', (msg) => {
-    const data = msg[0];
-    const partnerId = msg[0].sender_id === authStore.userid ? msg[0].receiver_id : msg[0].sender_id;
+    s.on('newMessage', (msg: any) => {
+      const data = msg[0];
+      const partnerId =
+        data.sender_id === authStore.userid
+          ? data.receiver_id
+          : data.sender_id;
 
-    if (data.sender_id === authStore.userid) {
-      isNewMessage.value[partnerId] = false;
-      return;
-    }
+      if (data.sender_id === authStore.userid) {
+        isNewMessage.value[partnerId] = false;
+        return;
+      }
 
-    if (data.status === "delivered" || data.status === "sent") {
-      isNewMessage.value[partnerId] = true;
-      alarmStore.addAlarm(data.sender_id);
-    }
-  });
-});
-
-watch(() => authStore.friends,
-  (newVal) => {
-    if (!Array.isArray(newVal)) return;
-
-    friends.value = newVal;
-
-    for (const item of friends.value) {
-      socket.emit('joinDirectRoom', {
-        userId1: authStore.userid,
-        userId2: item.id
-      });
-    }
+      if (data.status === 'delivered' || data.status === 'sent') {
+        isNewMessage.value[partnerId] = true;
+        alarmStore.addAlarm(data.sender_id);
+      }
+    });
   },
   { immediate: true }
 );

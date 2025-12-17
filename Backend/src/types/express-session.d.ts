@@ -7,5 +7,10 @@ declare module 'express-session' {
       username: string;
       nickname: string;
     };
+    admin?: {
+      userid: string;
+      username: string;
+      nickname: string;
+    };
   }
 }

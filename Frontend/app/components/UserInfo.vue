@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { io } from 'socket.io-client';
+import type { Socket } from 'socket.io-client';
 import { useAuthStore } from '~/stores/auth';
 import ProfilePopup from '~/components/ProfilePopup.vue';
 
@@ -10,7 +11,14 @@ const router = useRouter();
 const route = useRoute();
 const avatarUrl = ref<string>('');
 
+const socket = useState<any>('socket');
+
 async function logout() {
+  if (socket.value) {
+    socket.value.disconnect();
+    socket.value = null;
+  }
+
   try {
     const data : any = await $fetch(`${config.public.apiBase}/api/users/logout`, {
       method: 'GET',

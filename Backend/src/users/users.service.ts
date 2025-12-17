@@ -110,6 +110,13 @@ export class UsersService {
     }
   }
 
+  // 로그인 로그 남기기
+  async insertLoginLog(username: string, ip: string, agent: string, success : number) {
+    await pool.execute('INSERT INTO login_logs (username, ip, agent, success) VALUES (?, ?, ?, ?)',
+      [username, ip, agent, success]
+    );
+  }
+
   // 친구 목록 불러오기
   async checkFriend(userId: string) {
     const [requests] = await pool.execute<RowDataPacket[]>(
@@ -184,6 +191,94 @@ export class UsersService {
       );
 
       return { userId: userId, friendId: friendId, status: 'pending'};
+    } catch (error) {
+      // 예외 처리
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException('오류가 발생했습니다.');
+      }
+    }
+  }
+
+  async getFriendRequests(userid : string) {
+    try {
+      const [rows] = await pool.execute<RowDataPacket[]>(
+        `SELECT * FROM friend_requests WHERE receiverId = ? AND status = 'pending'`,
+        [userid]
+      )
+
+      let requests: { userId: number; username : string; nickname : string }[] = [];
+
+      if (rows.length > 0) {
+        for (const row of rows) {
+          const [users] = await pool.execute<RowDataPacket[]>(
+            'SELECT * FROM users WHERE id = ?',
+            [row.senderId]
+          )
+
+          requests.push(
+            { userId: users[0].id!, username: users[0].username!, nickname: users[0].nickname! }
+          )
+        }
+      }
+
+      return requests;
+    } catch (error) {
+      // 예외 처리
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException('오류가 발생했습니다.');
+      }
+    }
+  }
+
+  async rejectRequest(userid : string, friendId : string) {
+    try {
+      const [rows] = await pool.execute<RowDataPacket[]>(
+        'SELECT * FROM friend_requests WHERE senderId = ? AND receiverId = ?',
+        [friendId, userid]
+      );
+
+      await pool.execute(
+        'DELETE FROM friend_requests WHERE id = ?',
+        [rows[0]!.id]
+      );
+
+      return { ok: true };
+    } catch (error) {
+      // 예외 처리
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        throw new InternalServerErrorException('오류가 발생했습니다.');
+      }
+    }
+  }
+
+  async acceptRequest(userid : string, friendId : string) {
+    try {
+      const [rows] = await pool.execute<RowDataPacket[]>(
+        'SELECT * FROM friend_requests WHERE senderId = ? AND receiverId = ?',
+        [friendId, userid]
+      );
+
+      await pool.execute(
+        'UPDATE friend_requests SET status = ? WHERE id = ?',
+        ['accepted', rows[0]!.id]
+      );
+
+      const [friends] = await pool.execute<RowDataPacket[]>(
+        'SELECT * FROM users WHERE id = ?',
+        [ friendId ]
+      )
+
+      return { ok: true, body : {
+        id: friends[0].id,
+        username: friends[0].username,
+        nickname: friends[0].nickname
+      } };
     } catch (error) {
       // 예외 처리
       if (error instanceof HttpException) {
