@@ -19,7 +19,7 @@ async function bootstrap() {
   expressApp.set('trust proxy', 1);
 
   app.enableCors({
-    origin: ['https://velocibet.com', 'https://www.velocibet.com'],
+    origin: true, //['https://velocibet.com', 'https://www.velocibet.com'],
     credentials: true,
   });
 
