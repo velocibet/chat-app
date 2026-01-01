@@ -1,7 +1,6 @@
 import { Inject, Injectable, HttpException, ConflictException, BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import * as argon2 from 'argon2';
 import { pool } from '../database';
-import { ResultSetHeader, RowDataPacket } from 'mysql2';
 
 interface Login {
   username: string;
@@ -14,8 +13,8 @@ export class AdminService {
         const { username, password } = body;
         try {
           // 사용자 조회
-          const [users] = await pool.execute<RowDataPacket[]>(
-            'SELECT id, username, nickname, password FROM users WHERE username = ?',
+          const { rows: users } = await pool.query(
+            'SELECT id, username, nickname, password FROM users WHERE username = $1',
             [username]
           );
     
@@ -26,8 +25,8 @@ export class AdminService {
           const user = users[0];
           
           // 관리자 유저 검증
-          const [adminusers] = await pool.execute<RowDataPacket[]>(
-            'SELECT * FROM admin_users WHERE userId = ?',
+          const { rows: adminusers } = await pool.query(
+            'SELECT * FROM admin_users WHERE "userId" = $1',
             [user.id]
           );
 

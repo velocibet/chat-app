@@ -7,13 +7,14 @@ import '~/assets/css/default-layout.css';
     <header class="default-header">
       <nav class="default-nav">
         <div class="nav-left">
-          <NuxtLink to="/">메신저</NuxtLink>
+          <NuxtLink to="/">Velocibet</NuxtLink>
         </div>
         <div class="nav-right">
           <NuxtLink to="/login">로그인</NuxtLink>
           <NuxtLink to="/register">회원가입</NuxtLink>
         </div>
       </nav>
+      <hr>
     </header>
 
     <!-- <UserCheck /> -->
@@ -33,10 +34,10 @@ import '~/assets/css/default-layout.css';
       </div>
 
       <div class="footer-contact">
-        <p>© 2025 미니미니연</p>
+        <p>© 2026 Velocibet</p>
         <div class="social">
-          <a href="#" aria-label="twitter">Twitter</a>
-          <a href="#" aria-label="instagram">Instagram</a>
+          <a href="https://x.com/velocibet" aria-label="twitter">Twitter</a>
+          <a href="https://github.com/velocibet/chat-app" aria-label="Github">Github</a>
         </div>
       </div>
     </footer>

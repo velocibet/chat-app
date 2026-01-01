@@ -54,8 +54,8 @@ async function bootstrap() {
       saveUninitialized: false,
       cookie: {
         httpOnly: true,
-        secure: true,
-        sameSite: 'none',
+        secure: false, // true,
+        sameSite: 'lax', //none,
         maxAge: 1000 * 60 * 60 * 12,
       },
     }),

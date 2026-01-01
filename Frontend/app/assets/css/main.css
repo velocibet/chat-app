@@ -11,8 +11,15 @@ body {
   margin: 0;
   padding: 0;
   color: #ffffff;
-  background-color: #0d0d0d;
+  background-color: #01021A;
   font-family: pyeojinGothic-medium, sans-serif;
+}
+
+hr {
+  border: none;
+  height: 2px;
+  background-color: #3b4fff;
+  margin: 0;
 }
 
 h4 {
