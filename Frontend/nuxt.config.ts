@@ -17,6 +17,9 @@ export default defineNuxtConfig({
     },
     baseURL: './'
   },
+  devServer: {
+    port: 8000
+  },
   vite: {
     plugins: [tsconfigPaths()]
   },
