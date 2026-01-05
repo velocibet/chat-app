@@ -23,7 +23,7 @@ watch(
 <template>
   <div class="default-main">
     <div class="main-title">
-      <p>v0.1.0-alpha</p>
+      <p>v0.2.0-alpha - dev</p>
       <h1><span class="highlight">빠르고 가볍게</span> <br> 연결되는 대화</h1>
       <p>Velcoibet은 빠르고 가벼운 구조로 설계된 실시간 메신저로, <br> 안정적인 연결을 바탕으로 끊김 없는 대화를 제공합니다.</p>
 
