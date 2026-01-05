@@ -1,5 +1,7 @@
-import { UseInterceptors, UploadedFile, Controller, Get, Post, Body, Req, Res, Param, ValidationPipe , BadRequestException } from '@nestjs/common';
+import { UseInterceptors, UploadedFile, Controller, Get, Post, Body, Req, Res, Param, ValidationPipe , BadRequestException, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { DeleteObjectCommandOutput, DeleteObjectCommand, GetObjectCommandOutput, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { s3 } from '../bucket';
 import { UsersService } from './users.service';
 import { ChatGateway } from '../chat/ChatGateway';
 import { RegisterDto, LoginDto, FriendRequestDto, UpdateDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
@@ -8,6 +10,7 @@ import type { Request, Response } from 'express';
 // import sharp from 'sharp';
 import fs from 'fs';
 import * as path from 'path';
+import { Readable } from "stream";
 
 @Controller('users')
 export class UsersController {
@@ -151,6 +154,80 @@ export class UsersController {
     return { ok: true };
   }
 
+  @Post('sendImage')
+  @UseInterceptors(FileInterceptor('file'))
+  async sendImage(@UploadedFile() file: Express.Multer.File, @Body() body) {
+    const { fromId, toId } = body;
+
+    if (!file) throw new BadRequestException('파일 선택 후 전송하세요.');
+    if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드 가능합니다.');
+    if (file.size > 2 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
+
+    const fileName = `${fromId}-${Date.now()}`;
+
+    try {
+      await s3.send(new PutObjectCommand({
+          Bucket: 'velocibet',
+          Key: fileName,
+          Body: file.buffer
+      }));
+
+      const message = await this.usersService.saveImageUrl(fromId, toId, fileName);
+      const roomName = [Number(fromId), Number(toId)].sort((a, b) => a - b).join('_');
+      this.gateway.server.to(roomName).emit('newMessage', message);
+    } catch(err) {
+      throw new InternalServerErrorException("알수 없는 이유로 파일 업로드에 실패했습니다: " + err);
+    }
+    
+    return { ok: true, url: fileName };
+  }
+
+  @Post('getImage')
+  async getImage(@Req() req: Request, @Res() res: Response, @Body() body) {
+    const { messageId, fromId, toId } = body;
+    const userId = req.session.user?.userid;
+
+    if (userId != fromId && userId != toId) throw new UnauthorizedException("파일을 열람할 권한이 없습니다.");
+
+    const fileName = await this.usersService.getImageUrl(messageId);
+    if (!fileName) throw new InternalServerErrorException("파일이 존재하지 않습니다.");
+
+    try {
+      const s3Object: GetObjectCommandOutput = await s3.send(new GetObjectCommand({
+        Bucket: 'velocibet',
+        Key: fileName
+      }));
+
+      res.setHeader('Content-Type', s3Object.ContentType || 'image/*');
+
+      (s3Object.Body as Readable).pipe(res);
+    } catch(err) {
+      console.error(err);
+      throw new InternalServerErrorException("알수 없는 이유로 파일 불러오기에 실패했습니다: " + err);
+    }
+  }
+
+  @Post('deleteImage')
+  async deleteImage(@Req() req: Request, @Body() body) {
+    const { messageId, fromId, toId } = body;
+    const userId = req.session.user?.userid;
+    if (userId != fromId && userId != toId) throw new UnauthorizedException("파일을 열람할 권한이 없습니다.");
+
+    const fileName = await this.usersService.getImageUrl(messageId);
+    if (!fileName) throw new InternalServerErrorException("파일이 존재하지 않습니다.");
+
+    try {
+      const s3Object: DeleteObjectCommandOutput = await s3.send(new DeleteObjectCommand({
+        Bucket: 'velocibet',
+        Key: fileName
+      }));
+
+      return
+    } catch(err) {
+      console.error(err);
+      throw new InternalServerErrorException("알수 없는 이유로 파일 불러오기에 실패했습니다: " + err);
+    }
+  }
 
   @Get('checkProfileImage')
   async checkProfileImage(@Req() req: Request) {

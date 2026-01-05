@@ -83,8 +83,7 @@ interface friend {
     const message = await this.chatService.sendMessage(fromId, toId, content, roomName);
 
     // 새로운 메세지 emit
-    client.to(roomName).emit('newMessage', message);
-    client.emit('newMessage', message);
+    this.server.to(roomName).emit('newMessage', message);
   }
 
   @SubscribeMessage('readMessage')
@@ -109,6 +108,6 @@ interface friend {
     await this.chatService.deleteMessage(messageId, roomName, content);
     const messages = await this.chatService.getMessages(roomName);
 
-    client.emit('previousMessage', messages);
+    this.server.to(roomName).emit('previousMessage', messages);
   }
 }

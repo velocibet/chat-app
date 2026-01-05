@@ -5,21 +5,21 @@ import { pool } from '../database';
 export class ChatService {
     async sendMessage(fromId : number, toId : number, content : string, roomName : string) {
         const result = await pool.query(
-            'INSERT INTO messages (room_name, sender_id, receiver_id, content, status) VALUES ($1, $2, $3, $4, $5) RETURNING id',
-            [roomName, fromId, toId, content, 'sent']
-        );
+                'INSERT INTO messages (room_name, sender_id, receiver_id, content, status) VALUES ($1, $2, $3, $4, $5) RETURNING id',
+                [roomName, fromId, toId, content, 'sent']
+            );
 
         const { rows } = await pool.query(
             'SELECT * FROM messages WHERE id = $1',
             [result.rows[0].id]
         );
 
-        return rows;
+        return rows[0];
     }
 
     async getMessages(roomName : string) {
         const { rows } = await pool.query(
-            'SELECT * FROM messages WHERE room_name = $1',
+            'SELECT * FROM messages WHERE room_name = $1 ORDER BY created_at ASC',
             [roomName]
         )
 

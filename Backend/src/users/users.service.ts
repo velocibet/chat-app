@@ -278,6 +278,36 @@ export class UsersService {
     }
   }
 
+  async saveImageUrl(fromId: string, toId: string, url: string) {
+    const roomName = [Number(fromId), Number(toId)]
+      .sort((a, b) => a - b)
+      .join('_');
+
+    const result = await pool.query(
+      `
+      INSERT INTO messages (room_name, sender_id, receiver_id, content, status, isfile)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, room_name, sender_id, receiver_id, content, status, isfile, created_at
+      `,
+      [roomName, fromId, toId, url, 'sent', 1]
+    );
+
+    return result.rows[0];
+  }
+
+
+  async getImageUrl(messageId: string){
+    const id = Number(messageId); // 숫자로 변환
+    const result = await pool.query(
+      "SELECT content FROM messages WHERE id = $1 AND isfile = $2",
+      [id, 1]
+    );
+
+    if (!result.rows.length) throw new Error(`메시지 ID ${messageId}에 대한 이미지가 존재하지 않습니다.`);
+
+    return result.rows[0].content;
+  }
+
   async changePassword(body: ChangePassword) {
     const { userId, currentPassword, changePassword } = body;
 
