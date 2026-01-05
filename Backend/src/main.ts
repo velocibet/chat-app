@@ -54,15 +54,16 @@ async function bootstrap() {
       saveUninitialized: false,
       cookie: {
         httpOnly: true,
-        secure: false,
-        //secure: true,
-        sameSite: 'lax',
-        //sameSite: 'none',
+        //secure: false,
+        secure: true,
+        //sameSite: 'lax',
+        sameSite: 'none',
         maxAge: 1000 * 60 * 60 * 12,
       },
     }),
   );
 
-  await app.listen(8000);
+  await app.listen(8100);
+  // await app.listen(8000);
 }
 bootstrap();
