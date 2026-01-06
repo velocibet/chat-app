@@ -2,7 +2,10 @@
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineNuxtConfig({
-  modules: ['@pinia/nuxt'],
+  modules: ['@pinia/nuxt', 'nuxt-gtag'],
+  gtag: {
+    id: 'G-1P0422E37C'
+  },
   ssr: false,
   app: {
     head: {
