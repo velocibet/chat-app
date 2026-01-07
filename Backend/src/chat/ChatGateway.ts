@@ -86,6 +86,20 @@ interface friend {
     this.server.to(roomName).emit('newMessage', message);
   }
 
+  @SubscribeMessage('loadMessages')
+  async loadMessages(
+    @MessageBody() payload,
+    @ConnectedSocket() client : Socket
+  ) {
+    const { fromId, toId, limit, lastId } = payload;
+    const roomName = [fromId, toId].sort((a, b) => a - b).join('_');
+
+    const messages = await this.chatService.loadMessages(roomName, limit, lastId);
+
+    // 새로운 메세지 emit
+    client.emit('loadMessages', messages);
+  }
+
   @SubscribeMessage('readMessage')
   async readMessage(
     @MessageBody() payload : joinDirectRoom,

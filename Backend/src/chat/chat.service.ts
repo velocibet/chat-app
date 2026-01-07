@@ -55,4 +55,21 @@ export class ChatService {
             [messageId, roomName, content]
         )
     }
+
+    async loadMessages(roomName: string, limit: number, lastId?: Number) {
+        if (!lastId) {
+            const { rows } = await pool.query(
+                'SELECT * FROM messages WHERE room_name = $1 ORDER BY created_at DESC LIMIT $2',
+                [roomName, limit]
+            )
+            return rows.reverse();
+        }
+
+        const { rows } = await pool.query(
+            'SELECT * FROM messages WHERE room_name = $1 AND id < $2 ORDER BY created_at DESC LIMIT $3',
+            [roomName, lastId, limit]
+        )
+
+        return rows.reverse();
+    }
 }

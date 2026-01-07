@@ -6,6 +6,7 @@
 }
 
 .chat-layout main {
+  position: relative;
   flex: 1
 }
 
@@ -176,7 +177,7 @@
   flex: 1;
 }
 
-@media (max-width: 768px) {
+/* @media (max-width: 768px) {
   .chat-layout main {
     position: absolute;
     width: 100vw;
@@ -201,4 +202,4 @@
   .mobile-toggle {
     display: block;
   }
-}
+} */

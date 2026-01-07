@@ -161,7 +161,7 @@ export class UsersController {
 
     if (!file) throw new BadRequestException('파일 선택 후 전송하세요.');
     if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드 가능합니다.');
-    if (file.size > 2 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
+    if (file.size > 2.3 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
 
     const fileName = `${fromId}-${Date.now()}`;
 

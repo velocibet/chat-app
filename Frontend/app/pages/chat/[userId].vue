@@ -41,9 +41,18 @@ const fileName = ref('')
 const pendingImage = ref<File | null>(null)
 const previewUrl = ref<string | null>(null)
 const isSending = ref<boolean | null>(false);
+const isEnd = ref<boolean>(false);
+const avatarMap = ref<Record<number, string>>({})
 
 const selectFile = () => {
   fileInput.value?.click()
+}
+
+function ensureAvatar(userId: number) {
+  if (avatarMap.value[userId]) return
+
+  avatarMap.value[userId] =
+    `${config.public.apiBase}/uploads/profiles/${userId}.webp`
 }
 
 async function fetchImage(item: Message) {
@@ -63,6 +72,11 @@ async function fetchImage(item: Message) {
   } catch (err) {
     console.error('이미지 로드 실패', err);
   }
+}
+
+const onAvatarError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  img.src = `${config.public.apiBase}/uploads/profiles/default-avatar.webp`
 }
 
 async function handleFileChange (event: Event) {
@@ -214,33 +228,25 @@ async function sendMessage() {
       input.value = ''
     }
   } catch (err) {
-    console.error('메세지 전송 실패', err)
-    alert('메세지 전송에 실패했어요 😢')
+    console.error(err);
+    alert('메세지 전송에 실패했습니다.');
   } finally {
     isSending.value = false
   }
 }
 
-
-const onError = (e: Event) => {
-  const img = e.target as HTMLImageElement
-  img.src = `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
-}
-
-const getAvatarUrl = (item: Message) => {
-  if (item.sender_id === authStore.userid) {
-    return `${config.public.apiBase}/uploads/profiles/${authStore.userid}.webp` || `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
-  }
-
-  console.log(`${config.public.apiBase}/uploads/profiles/${authStore.friends[item.sender_id]?.id}.webp`)
+// const getAvatarUrl = (item: Message) => {
+//   if (item.sender_id === authStore.userid) {
+//     return `${config.public.apiBase}/uploads/profiles/${authStore.userid}.webp` || `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
+//   }
   
-  for (const f of authStore.friends) {
-    if (f.id !== item.sender_id) continue;
-     return `${config.public.apiBase}/uploads/profiles/${f.id}.webp`
-  }
+//   for (const f of authStore.friends) {
+//     if (f.id !== item.sender_id) continue;
+//      return `${config.public.apiBase}/uploads/profiles/${f.id}.webp`
+//   }
 
-  return `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
-}
+//   return `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
+// }
 
 async function downScroll() {
   await nextTick();
@@ -249,34 +255,62 @@ async function downScroll() {
   }
 }
 
+async function onScroll() {
+  if (!messageContainer.value) return;
+
+  if (messageContainer.value.scrollTop === 0 && !isEnd.value) {
+    socket.value.emit('loadMessages', {
+      fromId: authStore.userid, toId: Number(friendId), limit: 15, lastId: messages.value[0]?.id
+    })
+  }
+}
+
 onMounted(async() => {
-  console.log(socket.value)
   const isExistingFriend = friendMiddleware();
   if (!isExistingFriend) return;
 
-  socket.value.emit('joinDirectRoom', {
-    userId1: authStore.userid, userId2: friendId
-  });
-
-  socket.value.emit('readMessage', {
-    userId1: authStore.userid, userId2: friendId
-  });
-
-  socket.value.on('previousMessage', async (msgs : any) => {
+  socket.value.on('loadMessages', async (msgs : any) => {
     if (!msgs) return;
-    messages.value = msgs;
+    if (msgs.length === 0) {
+      isEnd.value = true;
+      return;
+    }
+    const container = messageContainer.value!
+    const prevScrollHeight = container.scrollHeight
+
+    messages.value.unshift(...msgs);
+    
+    for (const msg of msgs) {
+      ensureAvatar(msg.sender_id)
+    }
+
+    await nextTick()
+
+    const newScrollHeight = container.scrollHeight
+    container.scrollTop = newScrollHeight - prevScrollHeight
 
     for (const msg of messages.value) {
       if (msg.isfile === 1) await fetchImage(msg);
     }
 
-    await downScroll();
+    // await downScroll();
   })
 
+  // socket.value.on('previousMessage', async (msgs : any) => {
+  //   if (!msgs) return;
+  //   messages.value = msgs;
+
+  //   for (const msg of messages.value) {
+  //     if (msg.isfile === 1) await fetchImage(msg);
+  //   }
+
+  //   await downScroll();
+  // })
+
   socket.value.on('newMessage', async (msg : any) => {
-    console.log(msg)
     if (!msg) return;
     if (msg.isfile === 1) await fetchImage(msg);
+    ensureAvatar(msg.sender_id);
     messages.value.push(msg);
 
     await downScroll();
@@ -295,6 +329,18 @@ onMounted(async() => {
   alarmStore.setAlarms(Number(
     friendId
   ), 0);
+
+  socket.value.emit('joinDirectRoom', {
+    userId1: authStore.userid, userId2: friendId
+  });
+
+  socket.value.emit('readMessage', {
+    userId1: authStore.userid, userId2: friendId
+  });
+
+  socket.value.emit('loadMessages', {
+    fromId: authStore.userid, toId: Number(friendId), limit: 15
+  })
 });
 
 onUnmounted(() => {
@@ -308,10 +354,14 @@ onUnmounted(() => {
 
 <template>
   <section class="chat-container">
-    <div class="message-container" ref="messageContainer">
+    <div class="message-title">
+      <img :src="`${config.public.apiBase}/uploads/profiles/${friendId}.webp`" @error="onAvatarError" class="profile-image" />
+      <h4>{{ friendNick }} 님</h4>
+    </div>
+    <div class="message-container" ref="messageContainer" @scroll="onScroll">
       <div v-for="(item, index) in messages" :key="item.id" class="message">
         <div v-if="shouldShowHeader(index)" class="message-top">
-          <img :src="getAvatarUrl(item)" @error="onError" class="profile-image" />
+          <img :src="avatarMap[item.sender_id]" @error="onAvatarError" />
           <h4>{{ item.sender_id === authStore.userid ? authStore.nickname : friendNick }}</h4>
           <span>{{ formatKoreanTime(item.created_at) }}</span>
           <p @click.stop="toggleMenu(item.id)">︙</p>

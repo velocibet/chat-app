@@ -2,7 +2,10 @@
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineNuxtConfig({
-  modules: ['@pinia/nuxt'],
+  modules: ['@pinia/nuxt', 'nuxt-gtag'],
+  gtag: {
+    id: 'G-1P0422E37C'
+  },
   ssr: false,
   app: {
     head: {
@@ -17,9 +20,9 @@ export default defineNuxtConfig({
     },
     baseURL: './'
   },
-  devServer: {
-    port: 3100
-  },
+  // devServer: {
+  //   port: 3100
+  // },
   vite: {
     plugins: [tsconfigPaths()]
   },
