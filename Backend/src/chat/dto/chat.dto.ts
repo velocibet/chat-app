@@ -17,6 +17,9 @@ export class sendMessage {
 
   @IsString()
   content: string;
+
+  @IsNumber()
+  isfile: number;
 }
 
 export class previousMessage {

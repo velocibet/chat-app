@@ -15,6 +15,12 @@ body {
   font-family: pyeojinGothic-medium, sans-serif;
 }
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 hr {
   border: none;
   height: 2px;
@@ -119,4 +125,10 @@ li {
     src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2504-1@1.0/PyeojinGothic-Bold.woff2') format('woff2');
     font-weight: 700;
     font-display: swap;
+}
+
+@media (max-width: 768px) {
+  html, body {
+    overflow-x: hidden;
+  }
 }

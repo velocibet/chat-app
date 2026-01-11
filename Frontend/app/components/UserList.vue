@@ -75,7 +75,7 @@ watch(
     });
 
     s.on('newMessage', (msg: any) => {
-      const data = msg[0];
+      const data = msg;
       const partnerId =
         data.sender_id === authStore.userid
           ? data.receiver_id

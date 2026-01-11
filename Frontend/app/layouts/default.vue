@@ -25,8 +25,8 @@ import '~/assets/css/default-layout.css';
 
     <footer class="default-footer">
       <div class="footer-about">
-        <h4>메신저</h4>
-        <p>최고의 편리함을 제공하는 메신저.</p>
+        <h4>벨로시벳</h4>
+        <p>빠르고 가볍게 연결되는 대화</p>
       </div>
 
       <div class="footer-links">

@@ -6,6 +6,7 @@
 }
 
 .chat-layout main {
+  position: relative;
   flex: 1
 }
 

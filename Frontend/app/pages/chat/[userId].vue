@@ -3,6 +3,11 @@ import { io } from 'socket.io-client';
 import { useAlarmStore } from '~/stores/alarm';
 import { useAuthStore } from '~/stores/auth';
 import '@/assets/css/chat-room.css';
+import type { Url } from 'url';
+
+definePageMeta({
+  layout: 'chat',
+});
 
 const router = useRouter();
 const route = useRoute();
@@ -20,6 +25,8 @@ interface Message {
   content: string;
   status: string;
   created_at: string;
+  isfile: 0 | 1;
+  fileUrl?: string;
 }
 
 const friendId = route.params.userId as string;
@@ -29,10 +36,73 @@ const input = ref<string>('');
 const messageContainer = ref<HTMLElement | null>(null);
 const openMenuId = ref<string | number | null>(null);
 const THREE_MINUTES = 3 * 60 * 1000
+const fileInput = ref<HTMLInputElement | null>(null);
+const fileName = ref('')
+const pendingImage = ref<File | null>(null)
+const previewUrl = ref<string | null>(null)
+const isSending = ref<boolean | null>(false);
+const isEnd = ref<boolean>(false);
+const avatarMap = ref<Record<number, string>>({})
+const isFriendOnline = ref<boolean>(false);
 
-definePageMeta({
-  layout: 'chat',
-});
+const selectFile = () => {
+  fileInput.value?.click()
+}
+
+function ensureAvatar(userId: number) {
+  if (avatarMap.value[userId]) return
+
+  avatarMap.value[userId] =
+    `${config.public.apiBase}/uploads/profiles/${userId}.webp`
+}
+
+async function fetchImage(item: Message) {
+  try {
+    const blob: any = await $fetch(`${config.public.apiBase}/api/users/getImage`, {
+      method: 'POST',
+      credentials: 'include',
+      body: {
+        messageId: String(item.id),
+        fromId: String(item.sender_id),
+        toId: String(item.receiver_id)
+      },
+      responseType: 'blob'
+    });
+
+    item.fileUrl = URL.createObjectURL(blob);
+  } catch (err) {
+    console.error('이미지 로드 실패', err);
+  }
+}
+
+const onAvatarError = (e: Event) => {
+  const img = e.target as HTMLImageElement
+  img.src = `${config.public.apiBase}/uploads/profiles/default-avatar.webp`
+}
+
+async function handleFileChange (event: Event) {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+
+  if (file.size > 2 * 1024 * 1024) {
+    alert('파일 크기는 2MB 이하만 가능합니다.')
+    return
+  }
+
+  if (!file.type.startsWith('image/')) {
+    alert('이미지 파일만 업로드 가능합니다.')
+    return
+  }
+
+  pendingImage.value = file
+  previewUrl.value = URL.createObjectURL(file)
+}
+
+const cancelImage = () => {
+  previewUrl.value = null
+  pendingImage.value = null
+}
 
 const toggleMenu = (id: string | number) => {
   openMenuId.value = openMenuId.value === id ? null : id
@@ -42,15 +112,40 @@ const closeMenu = () => {
   openMenuId.value = null
 }
 
-const deleteMessage = (item: Message) => {
+async function deleteMessage(item: Message) {
   if (!confirm("정말 메세지를 삭제하시겠습니까?")) return;
   closeMenu();
-  socket.value.emit('deleteMessage', {
-    messageId: item.id,
-    userId1 : authStore.userid,
-    userId2 : friendId,
-    content : item.content
-  })
+  
+  if (item.isfile === 1) {
+    try {
+      await $fetch(`${config.public.apiBase}/api/users/deleteImage`, {
+        method: 'POST',
+        credentials: 'include',
+        body: {
+          messageId: String(item.id),
+          fromId: String(authStore.userid),
+          toId: String(friendId)
+        }
+      });
+
+      socket.value.emit('deleteMessage', {
+          messageId: item.id,
+          userId1 : authStore.userid,
+          userId2 : friendId,
+          content : item.content
+      });
+    } catch(err) {
+      console.error(err);
+      alert("이미지 삭제에 실패했습니다.");
+    }
+  } else {
+    socket.value.emit('deleteMessage', {
+        messageId: item.id,
+        userId1 : authStore.userid,
+        userId2 : friendId,
+        content : item.content
+    });
+  }
 }
 
 function reportMessage() {
@@ -100,38 +195,59 @@ function formatKoreanTime(isoString: string) {
   return `${year}년 ${month}월 ${day}일 ${hours}시 ${minutes}분`
 }
 
-
 async function sendMessage() {
-  const isExistingFriend = friendMiddleware();
-  if (!isExistingFriend) return;
+  const isExistingFriend = friendMiddleware()
+  if (!isExistingFriend) return
 
-  socket.value.emit('sendMessage', {
-    fromId: authStore.userid, toId: friendId, content: input.value
-  });
+  if (isSending.value === true) return;
+  isSending.value = true;
 
-  input.value = '';
-  return;
-}
+  try {
+    if (pendingImage.value) {
+      const formData = new FormData()
+      formData.append('fromId', String(authStore.userid))
+      formData.append('toId', String(friendId))
+      formData.append('file', pendingImage.value)
 
-const onError = (e: Event) => {
-  const img = e.target as HTMLImageElement
-  img.src = `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
-}
+      await $fetch(`${config.public.apiBase}/api/users/sendImage`, {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
+      })
 
-const getAvatarUrl = (item: Message) => {
-  if (item.sender_id === authStore.userid) {
-    return `${config.public.apiBase}/uploads/profiles/${authStore.userid}.webp` || `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
+      pendingImage.value = null
+      previewUrl.value = null
+      return
+    }
+
+    if (input.value.trim()) {
+      socket.value.emit('sendMessage', {
+        fromId: authStore.userid,
+        toId: friendId,
+        content: input.value
+      })
+      input.value = ''
+    }
+  } catch (err) {
+    console.error(err);
+    alert('메세지 전송에 실패했습니다.');
+  } finally {
+    isSending.value = false
   }
+}
 
-  console.log(`${config.public.apiBase}/uploads/profiles/${authStore.friends[item.sender_id]?.id}.webp`)
+// const getAvatarUrl = (item: Message) => {
+//   if (item.sender_id === authStore.userid) {
+//     return `${config.public.apiBase}/uploads/profiles/${authStore.userid}.webp` || `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
+//   }
   
-  for (const f of authStore.friends) {
-    if (f.id !== item.sender_id) continue;
-     return `${config.public.apiBase}/uploads/profiles/${f.id}.webp`
-  }
+//   for (const f of authStore.friends) {
+//     if (f.id !== item.sender_id) continue;
+//      return `${config.public.apiBase}/uploads/profiles/${f.id}.webp`
+//   }
 
-  return `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
-}
+//   return `${config.public.apiBase}/uploads/profiles/default-avatar.webp`;
+// }
 
 async function downScroll() {
   await nextTick();
@@ -140,29 +256,78 @@ async function downScroll() {
   }
 }
 
+async function onScroll() {
+  if (!messageContainer.value) return;
+
+  if (messageContainer.value.scrollTop === 0 && !isEnd.value) {
+    socket.value.emit('loadMessages', {
+      fromId: authStore.userid, toId: Number(friendId), limit: 15, lastId: messages.value[0]?.id
+    })
+  }
+}
+
 onMounted(async() => {
-  console.log(socket.value)
   const isExistingFriend = friendMiddleware();
   if (!isExistingFriend) return;
 
-  socket.value.emit('joinDirectRoom', {
-    userId1: authStore.userid, userId2: friendId
+  setInterval(() => {
+    socket.value.emit('heartbeat'); // 15초마다 온라인 갱신
+  }, 15000);
+
+
+  socket.value.emit('checkOnline', {
+    userId: Number(friendId),
   });
 
-  socket.value.emit('readMessage', {
-    userId1: authStore.userid, userId2: friendId
+  socket.value.on('onlineStatus', (data: any) => {
+    if (data.userId === Number(friendId)) {
+      isFriendOnline.value = data.online;
+    }
   });
 
-  socket.value.on('previousMessage', async (msgs : any) => {
+  socket.value.on('loadMessages', async (msgs : any) => {
     if (!msgs) return;
-    messages.value = msgs
+    if (msgs.length === 0) {
+      isEnd.value = true;
+      return;
+    }
+    const container = messageContainer.value!
+    const prevScrollHeight = container.scrollHeight
 
-    await downScroll();
+    messages.value.unshift(...msgs);
+    
+    for (const msg of msgs) {
+      ensureAvatar(msg.sender_id)
+    }
+
+    await nextTick()
+
+    const newScrollHeight = container.scrollHeight
+    container.scrollTop = newScrollHeight - prevScrollHeight
+
+    for (const msg of messages.value) {
+      if (msg.isfile === 1) await fetchImage(msg);
+    }
+
+    // await downScroll();
   })
+
+  // socket.value.on('previousMessage', async (msgs : any) => {
+  //   if (!msgs) return;
+  //   messages.value = msgs;
+
+  //   for (const msg of messages.value) {
+  //     if (msg.isfile === 1) await fetchImage(msg);
+  //   }
+
+  //   await downScroll();
+  // })
 
   socket.value.on('newMessage', async (msg : any) => {
     if (!msg) return;
-    messages.value.push(msg[0]);
+    if (msg.isfile === 1) await fetchImage(msg);
+    ensureAvatar(msg.sender_id);
+    messages.value.push(msg);
 
     await downScroll();
 
@@ -180,16 +345,46 @@ onMounted(async() => {
   alarmStore.setAlarms(Number(
     friendId
   ), 0);
+
+  socket.value.emit('joinDirectRoom', {
+    userId1: authStore.userid, userId2: friendId
+  });
+
+  socket.value.emit('readMessage', {
+    userId1: authStore.userid, userId2: friendId
+  });
+
+  socket.value.emit('loadMessages', {
+    fromId: authStore.userid, toId: Number(friendId), limit: 30
+  })
 });
+
+onUnmounted(() => {
+  if (!socket.value) return
+  socket.value.off('newMessage')
+  socket.value.off('previousMessage')
+})
+
 
 </script>
 
 <template>
   <section class="chat-container">
-    <div class="message-container" ref="messageContainer">
+    <div class="message-title">
+      <img :src="`${config.public.apiBase}/uploads/profiles/${friendId}.webp`" @error="onAvatarError" />
+      <div class="title-content">
+        <h4>{{ friendNick }} 님</h4>
+        <span>대화를 시작해보세요.</span>
+      </div>
+      <div class="isOnline">
+        <span v-if="isFriendOnline">🟢 온라인</span>
+        <span v-else>⛔ 오프라인</span>
+      </div>
+    </div>
+    <div class="message-container" ref="messageContainer" @scroll="onScroll">
       <div v-for="(item, index) in messages" :key="item.id" class="message">
         <div v-if="shouldShowHeader(index)" class="message-top">
-          <img :src="getAvatarUrl(item)" @error="onError" class="profile-image" />
+          <img :src="avatarMap[item.sender_id]" @error="onAvatarError" />
           <h4>{{ item.sender_id === authStore.userid ? authStore.nickname : friendNick }}</h4>
           <span>{{ formatKoreanTime(item.created_at) }}</span>
           <p @click.stop="toggleMenu(item.id)">︙</p>
@@ -198,12 +393,23 @@ onMounted(async() => {
             <button v-else @click="reportMessage">신고</button>
           </div>
         </div>
-        <p>{{ item.content }}</p>
+        <div v-if="item.isfile === 1">
+          <img v-if="item.fileUrl" :src="item.fileUrl" class="chat-image" />
+          <p v-else>이미지 로딩 중...</p>
+        </div>
+        <p v-else>{{ item.content }}</p>
       </div>
     </div>
-    <form @submit.prevent="sendMessage">
-      <input v-model="input" type="text" placeholder="메세지 입력" class="primary-input" />
-      <button type="submit" class="outline-button" >전송</button>
-    </form>
+    <div v-if="previewUrl" class="image-preview">
+      <img :src="previewUrl" class="chat-image" />
+      <button @click="cancelImage">❌</button>
+    </div>
+    <div class="message-form">
+      <button @click="selectFile" class="primary-button">+</button>
+      <form @submit.prevent="sendMessage">
+        <input v-model="input" type="text" placeholder="메세지 입력" class="primary-input" />
+      </form>
+    </div>
+    <input type="file" ref="fileInput" @change="handleFileChange" style="display:none" />
   </section>
 </template>
