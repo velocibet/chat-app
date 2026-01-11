@@ -54,16 +54,13 @@ async function bootstrap() {
       saveUninitialized: false,
       cookie: {
         httpOnly: true,
-        //secure: false,
-        secure: true,
-        //sameSite: 'lax',
-        sameSite: 'none',
+        secure: process.env.SECURE === 'true',
+        sameSite: process.env.SAMESITE! as 'lax' | 'strict' | 'none',
         maxAge: 1000 * 60 * 60 * 12,
       },
     }),
   );
 
-  await app.listen(8100);
-  //await app.listen(8000);
+  await app.listen(process.env.PORT!);
 }
 bootstrap();

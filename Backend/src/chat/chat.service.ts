@@ -1,8 +1,29 @@
 import { Injectable } from '@nestjs/common';
 import { pool } from '../database';
+import { RedisService } from 'src/redis/redis.service';
 
 @Injectable()
 export class ChatService {
+    constructor(
+        private readonly redisService: RedisService
+    ) {}
+
+    async setUserOnline(userId: string) {
+        const redis = this.redisService.getClient();
+        await redis.set(
+            `user:online:${userId}`,
+            '1',
+            'EX',
+            30,
+        );
+    }
+
+    async isOnline(userId: number): Promise<boolean> {
+        const redis = this.redisService.getClient();
+        const result = await redis.exists(`user:online:${userId}`);
+        return result === 1;
+    }
+
     async sendMessage(fromId : number, toId : number, content : string, roomName : string) {
         const result = await pool.query(
                 'INSERT INTO messages (room_name, sender_id, receiver_id, content, status) VALUES ($1, $2, $3, $4, $5) RETURNING id',

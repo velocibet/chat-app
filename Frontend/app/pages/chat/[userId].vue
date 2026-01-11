@@ -43,6 +43,7 @@ const previewUrl = ref<string | null>(null)
 const isSending = ref<boolean | null>(false);
 const isEnd = ref<boolean>(false);
 const avatarMap = ref<Record<number, string>>({})
+const isFriendOnline = ref<boolean>(false);
 
 const selectFile = () => {
   fileInput.value?.click()
@@ -269,6 +270,21 @@ onMounted(async() => {
   const isExistingFriend = friendMiddleware();
   if (!isExistingFriend) return;
 
+  setInterval(() => {
+    socket.value.emit('heartbeat'); // 15초마다 온라인 갱신
+  }, 15000);
+
+
+  socket.value.emit('checkOnline', {
+    userId: Number(friendId),
+  });
+
+  socket.value.on('onlineStatus', (data: any) => {
+    if (data.userId === Number(friendId)) {
+      isFriendOnline.value = data.online;
+    }
+  });
+
   socket.value.on('loadMessages', async (msgs : any) => {
     if (!msgs) return;
     if (msgs.length === 0) {
@@ -339,7 +355,7 @@ onMounted(async() => {
   });
 
   socket.value.emit('loadMessages', {
-    fromId: authStore.userid, toId: Number(friendId), limit: 15
+    fromId: authStore.userid, toId: Number(friendId), limit: 30
   })
 });
 
@@ -355,8 +371,15 @@ onUnmounted(() => {
 <template>
   <section class="chat-container">
     <div class="message-title">
-      <img :src="`${config.public.apiBase}/uploads/profiles/${friendId}.webp`" @error="onAvatarError" class="profile-image" />
-      <h4>{{ friendNick }} 님</h4>
+      <img :src="`${config.public.apiBase}/uploads/profiles/${friendId}.webp`" @error="onAvatarError" />
+      <div class="title-content">
+        <h4>{{ friendNick }} 님</h4>
+        <span>대화를 시작해보세요.</span>
+      </div>
+      <div class="isOnline">
+        <span v-if="isFriendOnline">🟢 온라인</span>
+        <span v-else>⛔ 오프라인</span>
+      </div>
     </div>
     <div class="message-container" ref="messageContainer" @scroll="onScroll">
       <div v-for="(item, index) in messages" :key="item.id" class="message">
