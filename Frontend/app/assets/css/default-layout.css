@@ -191,3 +191,64 @@
     display: flex;
     gap: 16px;
 }
+
+@media (max-width: 768px) {
+
+  /* 전체 여백 줄이기 */
+  .default-nav .nav-left,
+  .default-nav .nav-right,
+  .main-description {
+    padding: 0 5%;
+  }
+
+  .default-main .main-title {
+    height: auto;
+    min-height: 100vh;
+    padding: 120px 5% 40px;
+    box-sizing: border-box;
+  }
+
+  /* 메인 타이틀 */
+  .main-title {
+    height: auto;
+    padding-top: 10vh;
+  }
+
+  .main-title h1 {
+    font-size: 2.4rem;
+    line-height: 1.2;
+  }
+
+  .main-title p {
+    font-size: 1rem;
+  }
+
+  /* 버튼 세로 정렬 */
+  .default-main .main-decision {
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  .main-decision a {
+    width: 100%;
+    height: 44px;
+    font-size: 1rem;
+  }
+
+  /* 장점 섹션 */
+  .main-description {
+    height: auto;
+    margin-top: 40px;
+  }
+
+  .main-description .sections {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .main-description .sections section {
+    width: 100%;
+    height: auto;
+  }
+}
