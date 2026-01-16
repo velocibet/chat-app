@@ -23,9 +23,13 @@ body {
 
 hr {
   border: none;
+  width: 85%;
   height: 2px;
-  background-color: #3b4fff;
-  margin: 0;
+  background-color: #707070;
+}
+
+h2 {
+    font-size: 1.8rem;
 }
 
 h4 {

@@ -1,6 +1,6 @@
 <template>
     <section class="default-main">
-        <div class="privacy">
+        <div class="post">
             <h1>개인정보처리방침</h1>
             <p>
             [벨로시벳]('https://www.velocibet.com' 이하 '벨로시벳')은(는) 이용자의 개인정보를 소중히 다루며, 「개인정보보호법」 등 관련 법령을 준수합니다.

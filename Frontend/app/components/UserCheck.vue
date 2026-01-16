@@ -18,7 +18,6 @@ async function connectSocket(userid: string) {
   });
 }
 
-
 async function checkLogin() {
     try {
         const data : any = await $fetch(`${config.public.apiBase}/api/users/checklogin`, {
