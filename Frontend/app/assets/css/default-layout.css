@@ -328,4 +328,14 @@
     width: 100%;
     height: auto;
   }
+
+  .second-description {
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+
+  .second-description img {
+    margin-top: 20px;
+    width: 100%;
+  }
 }
