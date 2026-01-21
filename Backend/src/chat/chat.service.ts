@@ -24,6 +24,15 @@ export class ChatService {
         return result === 1;
     }
 
+    async getFriends(userId: string): Promise<number[]> {
+        const { rows } = await pool.query(
+            'SELECT friend_id FROM friends WHERE user_id = $1',
+            [userId]
+        );
+        
+        return rows.map(row => row.friend_id);
+    }
+
     async sendMessage(fromId : number, toId : number, content : string, roomName : string) {
         const result = await pool.query(
                 'INSERT INTO messages (room_name, sender_id, receiver_id, content, status) VALUES ($1, $2, $3, $4, $5) RETURNING id',

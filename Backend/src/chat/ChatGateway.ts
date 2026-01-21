@@ -161,4 +161,30 @@ interface friend {
 
     this.server.to(roomName).emit('previousMessage', messages);
   }
+
+  // WebRTC
+
+  @SubscribeMessage("offer")
+  handleOffer(
+    @MessageBody() offer: any,
+    @ConnectedSocket() client: Socket
+  ) {
+    client.broadcast.emit("offer", offer);
+  }
+
+  @SubscribeMessage("answer")
+  handleAnswer(
+    @MessageBody() answer: any,
+    @ConnectedSocket() client: Socket
+  ) {
+    client.broadcast.emit("answer", answer);
+  }
+
+  @SubscribeMessage("ice")
+  handleIce(
+    @MessageBody() candidate: any,
+    @ConnectedSocket() client: Socket
+  ) {
+    client.broadcast.emit("ice", candidate);
+  }
 }
