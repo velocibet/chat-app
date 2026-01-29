@@ -141,7 +141,7 @@ export class UsersController {
     if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드 가능합니다.');
     if (file.size > 2 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
 
-    this.usersService.updateProfile(sessionUserId, username, nickname);
+    this.usersService.updateProfile(String(sessionUserId), username, nickname);
 
     const uploadDir = path.join(process.cwd(), 'uploads/profiles');
     const savePath = path.join(uploadDir, `${sessionUserId}.webp`); // 파일명만 webp로 변경
