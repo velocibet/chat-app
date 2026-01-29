@@ -133,17 +133,18 @@ export class UsersController {
 
   @Post('update')
   @UseInterceptors(FileInterceptor('file'))
-  async getUpdate(@UploadedFile() file: Express.Multer.File, @Body() body: UpdateDto) {
-    const { userid, username, nickname } = body;
+  async getUpdate(@Req() req: Request, @UploadedFile() file: Express.Multer.File, @Body() body: UpdateDto) {
+    const sessionUserId = req.session.user?.userid;
+    const { username, nickname } = body;
 
     if (!file) throw new BadRequestException('파일 선택 후 전송하세요.');
     if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드 가능합니다.');
     if (file.size > 2 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
 
-    this.usersService.updateProfile(userid, username, nickname);
+    this.usersService.updateProfile(sessionUserId, username, nickname);
 
     const uploadDir = path.join(process.cwd(), 'uploads/profiles');
-    const savePath = path.join(uploadDir, `${userid}.webp`); // 파일명만 webp로 변경
+    const savePath = path.join(uploadDir, `${sessionUserId}.webp`); // 파일명만 webp로 변경
 
     if (fs.existsSync(savePath)) {
       fs.unlinkSync(savePath);
@@ -184,10 +185,11 @@ export class UsersController {
 
   @Post('getImage')
   async getImage(@Req() req: Request, @Res() res: Response, @Body() body) {
+    const sessionUserId = req.session.user?.userid;
     const { messageId, fromId, toId } = body;
     const userId = req.session.user?.userid;
 
-    if (userId != fromId && userId != toId) throw new UnauthorizedException("파일을 열람할 권한이 없습니다.");
+    if (userId != sessionUserId && userId != toId) throw new UnauthorizedException("파일을 열람할 권한이 없습니다.");
 
     const fileName = await this.usersService.getImageUrl(messageId);
     if (!fileName) throw new InternalServerErrorException("파일이 존재하지 않습니다.");
@@ -209,9 +211,10 @@ export class UsersController {
 
   @Post('deleteImage')
   async deleteImage(@Req() req: Request, @Body() body) {
+    const sessionUserId = req.session.user?.userid;
     const { messageId, fromId, toId } = body;
     const userId = req.session.user?.userid;
-    if (userId != fromId && userId != toId) throw new UnauthorizedException("파일을 열람할 권한이 없습니다.");
+    if (userId != sessionUserId && userId != toId) throw new UnauthorizedException("파일을 열람할 권한이 없습니다.");
 
     const fileName = await this.usersService.getImageUrl(messageId);
     if (!fileName) throw new InternalServerErrorException("파일이 존재하지 않습니다.");
@@ -246,13 +249,14 @@ export class UsersController {
   }
 
   @Post('changePassword')
-  async changePassword(@Body() body : ChangePasswordDto) {
-    return await this.usersService.changePassword(body);
+  async changePassword(@Req() req: Request, @Body() body : ChangePasswordDto) {
+    const sessionUserId = req.session.user?.userid;
+    return await this.usersService.changePassword({userId: Number(sessionUserId), currentPassword: body.changePassword, changePassword: body.changePassword});
   }
 
   @Post('delete')
   async getDelete(@Body() body : DeleteDto, @Req() req: Request, @Res() res: Response) {
-    const userid = body.userId;
+    const userid = req.session.user?.userid;
 
     await new Promise<void>((resolve, reject) => {
       req.session.destroy(err => {
