@@ -251,7 +251,7 @@ export class UsersController {
   @Post('changePassword')
   async changePassword(@Req() req: Request, @Body() body : ChangePasswordDto) {
     const sessionUserId = req.session.user?.userid;
-    return await this.usersService.changePassword({userId: Number(sessionUserId), currentPassword: body.changePassword, changePassword: body.changePassword});
+    return await this.usersService.changePassword({userId: Number(sessionUserId), currentPassword: body.currentPassword, changePassword: body.changePassword});
   }
 
   @Post('delete')
