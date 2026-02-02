@@ -1,12 +1,14 @@
 <script lang="ts" setup>
 import { useAuthStore } from '~/stores/auth';
+import { useUserApi } from '~/composables/api/useUserApi';
 
 const authStore = useAuthStore();
-const config = useRuntimeConfig();
 const router = useRouter();
+const userApi = useUserApi();
 
 definePageMeta({
-  layout: 'setting'
+  layout: "setting",
+  middleware: ["auth"],
 });
 
 const passwordPopup = ref(false);
@@ -23,51 +25,32 @@ function getDelete(){
 }
 
 async function submit() {
-  try {
-      const data : any = await $fetch(`${config.public.apiBase}/api/users/changePassword`, {
-          method: "POST",
-          credentials: 'include',
-          body: {
-              userId : authStore.userid,
-              currentPassword: currentPassword.value,
-              changePassword: changePassword.value
-          }
-      });
+  const result = await userApi.changePassword({
+      currentPassword: currentPassword.value,
+      changePassword: changePassword.value
+  });
 
-      if (data?.ok) {
-        alert("비밀번호가 성공적으로 변경되었습니다.");
-      } else {
-        alert("알수 없는 에러입니다.");
-      }
-      
-  } catch(error : any) {
-      alert(error?.data?.message || "오류가 발생했습니다. 다시 시도해주세요.");
+  if (result?.success) {
+    passwordPopup.value = false;
+    currentPassword.value = '';
+    changePassword.value = '';
   }
+
+  alert(result.message);
 }
 
 async function submit2() {
   if (!confirm("계정을 정말 삭제하시겠습니까? 삭제시 즉각 모든 정보가 삭제되며, 복구할수 없으니 신중히 선택하시기 바랍니다.")) return;
 
-  try {
-      const data : any = await $fetch(`${config.public.apiBase}/api/users/delete`, {
-          method: "POST",
-          credentials: 'include',
-          body: {
-              userId : authStore.userid,
-              currentPassword: currentPassword.value
-          }
-      });
+  const result = await userApi.deleteAccount({
+      currentPassword: currentPassword.value
+  });
 
-      if (data?.ok) {
-        alert("계정이 성공적으로 삭제되었습니다.");
-        router.push('/');
-      } else {
-        alert("알수 없는 에러입니다.");
-      }
-      
-  } catch(error : any) {
-      alert(error?.data?.message || "오류가 발생했습니다. 다시 시도해주세요.");
+  if (result?.success) {
+    router.push('/');
   }
+
+  alert(result.message);
 }
 
 </script>

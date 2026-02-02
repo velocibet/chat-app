@@ -16,8 +16,6 @@ onMounted(() => {
 
 <template>
   <div class="setting-layout">
-    <UserCheck />
-
     <!-- 모바일 토글 버튼 -->
     <!-- <button class="mobile-toggle" @click="toggleSidebar">☰</button>
 

@@ -28,9 +28,6 @@ export class FriendRequestDto {
 
 export class UpdateDto {
   @IsString({ message: "로그인 상태가 아닙니다. 로그인 후 시도하세요." })
-  userid: string;
-
-  @IsString({ message: "로그인 상태가 아닙니다. 로그인 후 시도하세요." })
   username: string;
 
   @IsString({ message: "닉네임을 입력하세요." })
@@ -38,9 +35,6 @@ export class UpdateDto {
 }
 
 export class ChangePasswordDto {
-  @IsNumber()
-  userId : number;
-
   @IsString({ message: "비밀번호를 입력하세요." })
   currentPassword : string;
   
@@ -49,9 +43,6 @@ export class ChangePasswordDto {
 }
 
 export class DeleteDto {
-  @IsNumber()
-  userId : number;
-
   @IsString({ message: "비밀번호를 입력하세요." })
   currentPassword : string;
 }

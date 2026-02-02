@@ -2,18 +2,15 @@ import { IsString, IsNumber } from 'class-validator';
 
 export class joinDirectRoom {
   @IsNumber()
-  userId1: number;
-
-  @IsNumber()
-  userId2: number;
+  roomId: number;
 }
 
 export class sendMessage {
   @IsNumber()
-  fromId: number;
+  senderId: number;
 
   @IsNumber()
-  toId: number;
+  roomId: number;
 
   @IsString()
   content: string;
@@ -35,11 +32,9 @@ export class deleteMessage {
   messageId: number;
   
   @IsNumber()
-  userId1: number;
-
-  @IsNumber()
-  userId2: number;
+  roomId: number;
 
   @IsString()
   content: string;
 }
+

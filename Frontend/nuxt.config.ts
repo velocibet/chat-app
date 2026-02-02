@@ -3,10 +3,15 @@ import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineNuxtConfig({
   modules: ['@pinia/nuxt', 'nuxt-gtag'],
+  imports: {
+    dirs: [
+      'composables/**',
+      'types/**'
+    ]
+  },
   gtag: {
     id: String(process.env.GTAG_ID)
   },
-  ssr: false,
   app: {
     head: {
       title: '벨로시벳 - 빠르고 가볍게 연결되는 대화',
@@ -24,8 +29,7 @@ export default defineNuxtConfig({
           crossorigin: 'anonymous'
         }
       ]
-    },
-    baseURL: './'
+    }
   },
   // devServer: {
   //   port: 3100
@@ -36,7 +40,8 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE,
-      wsBase: process.env.NUXT_PUBLIC_WS_BASE
+      wsBase: process.env.NUXT_PUBLIC_WS_BASE,
+      imgBase: process.env.NUXT_PUBLIC_IMG_BASE
     }
   },
   css: [

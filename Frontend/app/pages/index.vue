@@ -31,16 +31,6 @@ function goToPost(id : string){
   window.location.href = `https://blog.velocibet.com/post.html?id=${id}`;
 }
 
-watch(
-  () => authStore.username,
-  (newVal) => {
-    if (newVal) {
-      router.push('/chat');
-    }
-  },
-  { immediate: true }
-);
-
 onMounted(() => {
   const elements = document.querySelectorAll('.sections section, .fade-in');
 
@@ -65,6 +55,7 @@ onMounted(() => {
   <div class="default-main">
     <div class="main-title">
       <p>v0.2.0-alpha</p>
+
       <h1><span class="highlight">빠르고 가볍게</span> <br> 연결되는 대화</h1>
       <p>Velcoibet은 빠르고 가벼운 구조로 설계된 실시간 메신저로, <br> 안정적인 연결을 바탕으로 끊김 없는 대화를 제공합니다.</p>
 

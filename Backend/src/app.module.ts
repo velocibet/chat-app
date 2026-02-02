@@ -1,24 +1,17 @@
 import { Module, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
-import { ServeStaticModule } from '@nestjs/serve-static';
 import { AuthMiddleware } from './auth.middleware';
 import { UsersModule } from './users/users.module';
 import { ChatModule } from './chat/chat.module';
-import { join } from 'path';
-import { AdminModule } from './admin/admin.module';
+import { ChatroomModule } from './chatroom/chatroom.module';
+import { FriendsModule } from './friends/friends.module';
 
 
 @Module({
   imports: [
     UsersModule,
     ChatModule,
-    // ServeStaticModule.forRoot({
-    //   rootPath: join(__dirname, '..', 'nuxt-dist')
-    // }),
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
-      serveRoot: '/uploads', // 브라우저에서 접근할 URL prefix
-    }),
-    AdminModule,
+    ChatroomModule,
+    FriendsModule,
   ]
 })
 export class AppModule {

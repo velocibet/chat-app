@@ -10,8 +10,6 @@ function toggleSidebar() {
 
 <template>
   <div class="chat-layout">
-    <UserCheck />
-
     <!-- 모바일 전용 토글 버튼 -->
     <button class="mobile-toggle" @click="toggleSidebar">
       ☰

@@ -1,38 +1,16 @@
 import { defineStore } from 'pinia';
-
-interface Friend {
-  id : number;
-  username: string;
-  nickname: string;
-}
+import type { User } from '~/types/users';
 
 export const useAuthStore = defineStore('auth', () => {
-  const username = ref<string | null>(null);
-  const nickname = ref<string | null>(null);
-  const userid = ref<number | null>(null);
-  const friends = ref<Friend[]>([]);
+  const user = ref<User | null>(null);
 
-  function setUser(name: string, id: number, nick: string, friendList: Friend[]) {
-    username.value = name;
-    nickname.value = nick;
-    userid.value = id;
-    friends.value = friendList;
+  /**
+   * 사용자의 정보를 저장합니다.
+   * @param userData 사용자의 정보 (userId, username, nickname)
+   */
+  function setUser(userData: User | null) {
+    user.value = userData;
   }
 
-  function clearUser() {
-    username.value = null;
-    nickname.value = null;
-    userid.value = null;
-    friends.value = [];
-  }
-
-  function setNick(nick : string) {
-    nickname.value = nick
-  }
-
-  function addFriend(body : Friend) {
-    friends.value.push(body);
-  }
-
-  return { username, userid, nickname, friends, setUser, clearUser, setNick, addFriend };
+  return { user, setUser };
 })

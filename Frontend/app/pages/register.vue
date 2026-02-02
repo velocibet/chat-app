@@ -1,28 +1,28 @@
 <script lang="ts" setup>
-    const router = useRouter();
-    const config = useRuntimeConfig();
+import { useUserApi } from '~/composables/api/useUserApi';
 
-    const username = ref<string>('');
-    const password = ref<string>('');
-    const email = ref<string>('');
+const userApi = useUserApi();
+const router = useRouter();
 
-    async function getRegister() {
-        try {
-            const data : any = await $fetch(`${config.public.apiBase}/api/users/register`, {
-                method: "POST",
-                body: {
-                    username: username.value,
-                    password: password.value,
-                    email: email.value
-                }
-            });
+const username = ref<string>('');
+const password = ref<string>('');
+const email = ref<string>('');
 
-            alert(`환영합니다 ${data.username}님, 로그인 페이지로 이동합니다.`);
-            router.push("/login");
-        } catch(error : any) {
-            alert(error?.data?.message || "오류가 발생했습니다. 다시 시도해주세요.");
-        }
+async function getRegister() {
+    const res = await userApi.register({
+        username: username.value,
+        password: password.value,
+        email: email.value
+    })
+
+    if (!res.success) {
+        alert(res.message);
+        return;
     }
+
+    alert(res.message);
+    router.push('/login');
+}
 </script>
 
 <template>

@@ -1,145 +1,126 @@
 <script setup lang="ts">
-import { useAuthStore } from '~/stores/auth';
-import type { Session } from 'inspector';
+import type { Friend } from "~/types/friends";
+import type { ApiResponse } from "~/types/response";
 
-const config = useRuntimeConfig();
-const authStore = useAuthStore();
+const friendsApi = useFriendsApi();
+const userApi = useUserApi();
 
-const friendName = ref<string>('');
-const friends = ref<Friend[]>([]);
-const requests = ref<{ userId: string; username: string; nickname: string }[]>([]);
+const { data: friendsData, refresh: refreshFriends } = await useAsyncData<ApiResponse<Friend[]>>('friends', () => friendsApi.getFriends());
+const { data: requestsData, refresh: refreshRequests } = await useAsyncData<ApiResponse<Friend[]>>('requests', () => friendsApi.getRequests());
 
-interface Friend {
-  username: string;
-  nickname: string;
-}
+const friends = computed<Friend[]>(() => friendsData.value?.data ?? []);
+const requests = computed<Friend[]>(() => requestsData.value?.data ?? []);
+
+const friendName = ref<string>("");
+const popup = ref<boolean>(false);
+const selectedUserId = ref<string | null>(null);
 
 definePageMeta({
-  layout: 'chat'
+  layout: "chat",
+  middleware: ["auth"],
 });
 
-async function getRequests() {
-  try {
-    const data : any = await $fetch(`${config.public.apiBase}/api/users/friend-receive`, {
-        method: "GET",
-        credentials: 'include'
-    })
+async function acceptRequests(fi: string) {
+  const res: ApiResponse = await friendsApi.handleRequest(fi, { status: "accepted" });
 
-    if (!data) {
-      alert("오류가 발생했습니다. 다시 시도해주세요.");
-      return;
-    }
-
-    requests.value = data;
-  } catch(error : any) {
-      alert(error?.data?.message || "오류가 발생했습니다. 다시 시도해주세요.");
+  if (res.success) {
+    await refreshFriends(); 
+    await refreshRequests();
   }
+
+  alert(res.message);
 }
 
-async function acceptRequests(fi : string) {
-  try {
-    const data : any = await $fetch(`${config.public.apiBase}/api/users/request-accept`, {
-        method: "POST",
-        credentials: 'include',
-        body: {
-          friendId: fi
-        }
-    })
+async function rejectRequests(fi: string) {
+  const res: ApiResponse = await friendsApi.handleRequest(fi, { status: "rejected" });
 
-    if (!data.ok) {
-      alert("오류가 발생했습니다. 다시 시도해주세요.");
-      return;
-    }
-
-    requests.value = requests.value.filter(req => req.userId !== fi);
-    alert("요청을 수락했습니다.");
-  } catch(error : any) {
-      alert(error?.data?.message || "오류가 발생했습니다. 다시 시도해주세요.");
+  if (res.success) {
+    await refreshFriends(); 
+    await refreshRequests();
   }
-}
 
-async function rejectRequests(fi : string) {
-  try {
-    const data : any = await $fetch(`${config.public.apiBase}/api/users/request-reject`, {
-        method: "POST",
-        credentials: 'include',
-        body: {
-          friendId: fi
-        }
-    })
-
-    if (!data.ok) {
-      alert("오류가 발생했습니다. 다시 시도해주세요.");
-      return;
-    }
-
-    requests.value = requests.value.filter(req => req.userId !== fi);
-    alert("요청을 거절했습니다.");
-  } catch(error : any) {
-      alert(error?.data?.message || "오류가 발생했습니다. 다시 시도해주세요.");
-  }
+  alert(res.message);
 }
 
 async function addFriend() {
-  try {
-    const data : any = await $fetch(`${config.public.apiBase}/api/users/friend-request`, {
-        method: "POST",
-        credentials: 'include',
-        body: {
-          friendName: friendName.value
-        }
-    })
+  const res = await friendsApi.requestFriend({
+    receiverUsername: friendName.value
+  });
 
-    if (!data) {
-      alert("오류가 발생했습니다. 다시 시도해주세요.");
-      return;
-    }
-
-    if (data.status === 'accepted') {
-      alert('친구 추가가 완료되었습니다. 새로고침 후 메세지를 보낼수 있습니다.');
-    } else if (data.status === 'pending') {
-      alert('친구 요청을 전송했습니다.');
-    }
-  } catch(error : any) {
-      alert(error?.data?.message || "오류가 발생했습니다. 다시 시도해주세요.");
+  if (res.success) {
+    await refreshFriends(); 
+    await refreshRequests();
   }
+
+  alert(res.message);
 }
 
-watchEffect(() => {
-  friends.value = authStore.friends;
-})
-
-onMounted(() => {
-  getRequests();
-});
-
+function getPopup() {
+  popup.value = !popup.value;
+}
 </script>
 
 <template>
   <section class="request-container">
     <h3>친구 추가</h3>
     <form @submit.prevent="addFriend">
-      <input class="primary-input" type="text" placeholder="아이디를 입력하세요." v-model="friendName" />
+      <input
+        class="primary-input"
+        type="text"
+        placeholder="아이디를 입력하세요."
+        v-model="friendName"
+      />
       <button class="primary-button" type="submit">전송</button>
     </form>
 
     <h3>친구 요청</h3>
-    <Session>
-      <div class="request-item" v-for="(item, index) in requests" :key="index">
+    <div>
+      <div
+        class="request-item"
+        v-for="(item, index) in requests"
+        :key="index"
+      >
         <div>
           <h5>{{ item.nickname }}</h5>
           <span>{{ item.username }}</span>
         </div>
         <div>
-          <button class="outline-button" @click="acceptRequests(item.userId)">수락</button>
-          <button class="primary-button" @click="rejectRequests(item.userId)">거절</button>
+          <button
+            class="outline-button"
+            @click="acceptRequests(item.username)"
+          >
+            수락
+          </button>
+          <button
+            class="primary-button"
+            @click="rejectRequests(item.username)"
+          >
+            거절
+          </button>
         </div>
       </div>
-    </Session>
+    </div>
 
     <h3>친구 목록</h3>
     <div v-for="(item, index) in friends" :key="index">
-      <p>{{ item.username }}</p>
+      <p
+        @click="selectedUserId = String(item.userId)"
+        style="cursor: pointer"
+      >
+        {{ item.username }}
+      </p>
     </div>
+    <!-- <Teleport to="body">
+      <UserPopup
+        v-if="selectedUserId"
+        :userId="selectedUserId"
+        @close="selectedUserId = null"
+      />
+    </Teleport>
+
+    <button class="outline-button" @click="getPopup">채팅방 만들기</button>
+    <Teleport to="body">
+      <RoomPopup v-if="popup" @close="popup = false" />
+    </Teleport> -->
   </section>
 </template>

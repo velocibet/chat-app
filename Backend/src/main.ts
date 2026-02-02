@@ -2,6 +2,9 @@ import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
+import {TransformInterceptor} from './transform.interceptor'
+import {HttpExceptionFilter} from './http-exception.filter'
+
 import * as express from 'express';
 import * as dotenv from 'dotenv';
 import path from 'path';
@@ -10,6 +13,18 @@ dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 import session from 'express-session';
 const cookieParser = require('cookie-parser');
+
+export const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET!,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    httpOnly: true,
+    secure: process.env.SECURE === 'true',
+    sameSite: process.env.SAMESITE! as 'lax' | 'strict' | 'none',
+    maxAge: 1000 * 60 * 60 * 12,
+  },
+});
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -47,20 +62,11 @@ async function bootstrap() {
 
   app.use('/uploads/profiles', express.static('uploads/profiles'));
   app.use(cookieParser());
-  app.use(
-    session({
-      secret: process.env.SESSION_SECRET!,
-      resave: false,
-      saveUninitialized: false,
-      cookie: {
-        httpOnly: true,
-        secure: process.env.SECURE === 'true',
-        sameSite: process.env.SAMESITE! as 'lax' | 'strict' | 'none',
-        maxAge: 1000 * 60 * 60 * 12,
-      },
-    }),
-  );
+  app.use(sessionMiddleware);
+  app.useGlobalInterceptors(new TransformInterceptor());
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   await app.listen(process.env.PORT!);
 }
+
 bootstrap();
