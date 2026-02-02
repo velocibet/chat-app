@@ -36,13 +36,11 @@ jobs:
         run: |
           rsync -avz --rsync-path="mkdir -p /var/www/chat-app-dev/Backend && rsync" ./Backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Backend/
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
+            export DB_NAME=velocibet_dev && \
             cd /var/www/chat-app-dev/Backend && \
             npm install && \
-            # 1. 마이그레이션 실행 (빌드 전이나 후에 실행)
-            npx node-pg-migrate up && \ 
-            # 2. 빌드 진행
             npm run build && \
-            # 3. 서버 재시작
+            npx node-pg-migrate up && \
             pm2 restart chat-app-dev || pm2 start dist/main.js --name chat-app-dev
           "
 
