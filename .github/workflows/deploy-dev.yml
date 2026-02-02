@@ -36,12 +36,12 @@ jobs:
         run: |
           rsync -avz --rsync-path="mkdir -p /var/www/chat-app-dev/Backend && rsync" ./Backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Backend/
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
-            export DB_NAME=velocibet_dev && \
             cd /var/www/chat-app-dev/Backend && \
             npm install && \
             npm run build && \
+            export DATABASE_URL='${{ secrets.DATABASE_URL_DEV }}' && \
             npx node-pg-migrate up && \
-            pm2 restart chat-app-dev || pm2 start dist/main.js --name chat-app-dev
+            pm2 restart chat-app-dev -f || pm2 start dist/main.js --name chat-app-dev
           "
 
       # 6. Frontend 배포
