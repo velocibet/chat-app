@@ -98,7 +98,7 @@ export class UsersService {
         SELECT email, used_at FROM email_verifications WHERE email = $1
       `, [email])
 
-      if (existingVerify.length < 1 || !existingEmail[0].used_at) throw new UnauthorizedException("이메일 인증을 완료해주세요.");
+      if (existingVerify.length < 1 || !existingVerify[0].used_at) throw new UnauthorizedException("이메일 인증을 완료해주세요.");
 
       if (password.length < 7) throw new ConflictException('비밀번호는 최소 8글자 이상이어야 합니다.');
 

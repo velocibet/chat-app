@@ -28,7 +28,7 @@ jobs:
 
       - name: Create directories on server
         run: |
-            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /var/www/chat-app/Backend /var/www/chat-app/Frontend"
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /var/www/chat-app-dev/Backend /var/www/chat-app-dev/Frontend"
 
       # 4. Backend 배포
       - name: Deploy Backend

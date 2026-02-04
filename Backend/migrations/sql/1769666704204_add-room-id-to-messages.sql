@@ -1,3 +1,5 @@
+BEGIN;
+
 -- 1. 타입 생성
 CREATE TYPE room_type AS ENUM ('dm', 'group');
 CREATE TYPE room_user_role AS ENUM ('owner', 'member');
@@ -58,6 +60,23 @@ ON friend_requests (
   GREATEST(sender_id, receiver_id)
 );
 
+ALTER TABLE room
+ADD COLUMN room_image_url TEXT;
+
+DROP INDEX IF EXISTS uniq_room_dm_hash;
+
+ALTER TABLE room
+ADD CONSTRAINT unique_dm_hash UNIQUE (dm_hash);
+
+ALTER TABLE messages
+DROP COLUMN IF EXISTS room_name;
+
+ALTER TABLE messages
+DROP COLUMN IF EXISTS receiver_id;
+
+ALTER TABLE messages
+ALTER COLUMN room_id SET NOT NULL;
+
 CREATE TABLE email_verifications (
     id BIGSERIAL PRIMARY KEY,
 
@@ -74,3 +93,5 @@ CREATE TABLE email_verifications (
         REFERENCES users(id)
         ON DELETE CASCADE
 );
+
+COMMIT;
