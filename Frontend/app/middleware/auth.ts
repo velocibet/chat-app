@@ -1,4 +1,5 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
+  const router = useRouter();
   const userApi = useUserApi();
   const friendsApi = useFriendsApi();
   const authStore = useAuthStore();
@@ -14,7 +15,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     authStore.setUser(userData.data);
   } else {
     authStore.setUser(null);
-    navigateTo("/");
+    window.location.href = '/login';
     return;
   }
 

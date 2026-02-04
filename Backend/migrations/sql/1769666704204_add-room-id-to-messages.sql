@@ -57,3 +57,20 @@ ON friend_requests (
   LEAST(sender_id, receiver_id),
   GREATEST(sender_id, receiver_id)
 );
+
+CREATE TABLE email_verifications (
+    id BIGSERIAL PRIMARY KEY,
+
+    user_id BIGINT NOT NULL,
+    token_hash CHAR(64) NOT NULL,
+
+    expires_at TIMESTAMPTZ NOT NULL,
+    used_at TIMESTAMPTZ,
+
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT fk_email_verifications_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);

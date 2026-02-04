@@ -81,6 +81,8 @@ export const useChatSocket = () => {
       attemptJoin();
 
       function attemptJoin() {
+        if (!currentSocket) return;
+        
         if (joinedRooms.value.has(String(roomId))) {
           resolve();
           return;

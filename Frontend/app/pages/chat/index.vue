@@ -116,11 +116,11 @@ function getPopup() {
         :userId="selectedUserId"
         @close="selectedUserId = null"
       />
-    </Teleport>
+    </Teleport> -->
 
     <button class="outline-button" @click="getPopup">채팅방 만들기</button>
     <Teleport to="body">
       <RoomPopup v-if="popup" @close="popup = false" />
-    </Teleport> -->
+    </Teleport>
   </section>
 </template>

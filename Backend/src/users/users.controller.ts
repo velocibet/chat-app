@@ -1,20 +1,48 @@
-import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete,  Body, Req, Res, Param, ParseIntPipe, ValidationPipe , NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException, Patch } from '@nestjs/common';
+import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete,  Body, Req, Res, Param, ParseIntPipe , NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException, Patch } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
-import { RegisterDto, LoginDto, FriendRequestDto, UpdateDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
+import { RegisterDto, LoginDto, UpdateDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
 import type { Request, Response } from 'express';
 import { User } from 'src/decorators/user.decorator';
 import { SessionData } from 'src/decorators/session.decorator';
 import sharp from 'sharp';
-import { DeleteObjectCommandOutput, DeleteObjectCommand, GetObjectCommandOutput, PutObjectCommand, GetObjectCommand } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
 import { s3 } from '../bucket';
 import fs from 'fs';
 import * as path from 'path';
-import { Readable } from 'stream';
+// import { Readable } from 'stream';
+import { Resend } from 'resend';
+import { useEmailVerifyHtml } from './email.verify.html';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
+
+  @Post('email/send')
+  async send(@Body() body) {
+    const { email } = body;
+    const token = await this.usersService.createToken(email);
+    
+    await resend.emails.send({
+      from: 'Velocibet 벨로시벳 <no-reply@velocibet.com>',
+      to: [email],
+      subject: '이메일 인증을 완료해주세요',
+      html: useEmailVerifyHtml(token),
+    });
+
+    return "ok"
+  }
+
+  @Post('email/verify')
+  async vertify(@Body() body){
+    const { token } = body;
+
+    const checkMessage = await this.usersService.verifyToken(token);
+
+    return checkMessage;
+  }
 
   @Post('register')
   async register(@Body() body : RegisterDto) {

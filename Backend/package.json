@@ -43,8 +43,9 @@
     "node-pg-migrate": "^8.0.4",
     "pg": "^8.16.3",
     "reflect-metadata": "^0.2.2",
+    "resend": "^6.9.1",
     "rxjs": "^7.8.1",
-    "sharp": "^0.34.5",
+    "sharp": "0.30.7",
     "socket.io": "^4.8.1",
     "uuid": "^13.0.0",
     "webp-converter": "^2.3.3"

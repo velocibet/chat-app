@@ -12,6 +12,7 @@ export interface Room {
   owner_user_id: number | null;
   dm_hash: string | null;
   created_at: string;
+  room_image_url: string;
 }
 
 export interface RoomUserRow {

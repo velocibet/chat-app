@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { pool } from '../database';
 import { RedisService } from 'src/redis/redis.service';
 
@@ -112,7 +112,7 @@ export class ChatService {
         [id, 1]
         );
 
-        if (!result.rows.length) throw new Error(`메시지 ID ${messageId}에 대한 이미지가 존재하지 않습니다.`);
+        if (!result.rows.length) throw new NotFoundException(`메시지 이미지가 존재하지 않습니다.`);
 
         return result.rows[0].content;
     }

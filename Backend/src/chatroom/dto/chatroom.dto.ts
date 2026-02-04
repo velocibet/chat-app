@@ -1,18 +1,18 @@
-import { IsString, IsArray, IsOptional, ValidateIf, IsIn, ArrayNotEmpty } from 'class-validator';
+import { IsString, IsNumber, IsArray, IsOptional, ValidateIf, IsIn, ArrayNotEmpty } from 'class-validator';
 
 export class ChatroomDto {
   @IsIn(['dm', 'group'])
   type: 'dm' | 'group';
 
   @ValidateIf(o => o.type === 'dm')
-  @IsString()
+  @IsNumber()
   @IsOptional()
   member?: number;
 
   @ValidateIf(o => o.type === 'group')
   @IsArray()
   @ArrayNotEmpty()
-  @IsString({ each: true })
+  @IsNumber({}, { each: true })
   @IsOptional()
   membersArray?: number[];
 

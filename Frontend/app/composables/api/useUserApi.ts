@@ -2,6 +2,14 @@ export const useUserApi = () => {
   const api = useApi('/users');
 
   return {
+    /** [POST] 이메일 인증 메일 발송 */
+    sendVerifyEmail: (email: string) =>
+      api.post('/email/send', { email }),
+
+    /** [POST] 이메일 인증 토큰 검증 */
+    verifyEmailToken: (token: string) =>
+      api.post<{ message: string }>('/email/verify', { token }),
+    
     /** [POST] 회원가입 */
     register: (body: RegisterDto) => api.post('/register', body),
 

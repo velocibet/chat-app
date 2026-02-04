@@ -60,7 +60,6 @@ async function bootstrap() {
     console.error("SESSION_SECRET is not defined");
   }
 
-  app.use('/uploads/profiles', express.static('uploads/profiles'));
   app.use(cookieParser());
   app.use(sessionMiddleware);
   app.useGlobalInterceptors(new TransformInterceptor());

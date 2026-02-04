@@ -9,12 +9,15 @@ import { Readable } from 'stream';
 import { ChatService } from './chat.service';
 import { ChatGateway } from './ChatGateway';
 import { User } from 'src/decorators/user.decorator';
+import { socketOk } from 'src/socket.response';
 import { DeleteObjectCommandOutput, DeleteObjectCommand, GetObjectCommandOutput, PutObjectCommand, GetObjectCommand, NotFound } from "@aws-sdk/client-s3";
 import { s3 } from '../bucket';
+import sharp from 'sharp';
 
 @Controller('chat')
 export class ChatController {
-    constructor(private readonly chatService: ChatService, private gateway: ChatGateway) {}
+  constructor(private readonly chatService: ChatService, private gateway: ChatGateway) {}
+  
     @Post('image')
     @UseInterceptors(FileInterceptor('file'))
     async send(
@@ -24,29 +27,40 @@ export class ChatController {
       @Body() body
     ) {
       const { roomId } = body;
-  
+
       if (!file) throw new BadRequestException('파일 선택 후 전송하세요.');
       if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지 파일만 업로드 가능합니다.');
-      if (file.size > 2.3 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
-  
-      const fileName = `${roomId}-${Date.now()}`;
-  
+      
+      if (file.size > 2 * 1024 * 1024) throw new BadRequestException('2MB 이하 파일만 업로드 가능합니다.');
+
+      const fileName = `${roomId}-${Date.now()}.webp`;
+
       try {
+        const processedImage = await sharp(file.buffer)
+          .resize(1200, 1200, { 
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .webp({ quality: 80 })
+          .toBuffer();
+
         await s3.send(new PutObjectCommand({
             Bucket: process.env.R2_BUCKET_CHATS,
             Key: fileName,
-            Body: file.buffer
+            Body: processedImage,
+            ContentType: 'image/webp',
         }));
-  
-        const message = await this.chatService.saveImageUrl(userId, roomId, fileName);
-        this.gateway.server.to(roomId).emit('newMessage', message);
 
+        const message = await this.chatService.saveImageUrl(userId, roomId, fileName);
+        this.gateway.server.to(`room:${roomId}`).emit('newMessage', socketOk("메세지를 성공적으로 보냈습니다.", message));
+        
         return {
           message: "성공적으로 파일을 전송했습니다.",
           data: message
         }
       } catch(error) {
-        throw new InternalServerErrorException("알수 없는 이유로 파일 업로드에 실패했습니다", {cause: error});
+        console.error(error);
+        throw new InternalServerErrorException("이미지 처리 중 오류가 발생했습니다.", {cause: error});
       }
     }
 
@@ -70,6 +84,7 @@ export class ChatController {
         res.set({
           'Content-Type': ContentType,
           'Content-Length': ContentLength,
+          'Content-Disposition': 'inline',
           'Cache-Control': 'public, max-age=3600', // 1시간동안 브라우저 캐싱 허용
         });
 

@@ -4,6 +4,7 @@ const router = useRouter();
 const userApi = useUserApi();
 const chatRoomApi = useChatroomApi();
 const profileImage = useProfileImage();
+const roomImage = useRoomImage();
 const authStore = useAuthStore();
 const friendsStore = useFriendsStore();
 
@@ -49,7 +50,7 @@ onMounted(() => {
           <button class="user-item" @click="joinDirectRoom(item.id)">
             <div class="user-avatar">
               <img v-if="item.type === 'dm'" :src="profileImage.getUrl(getPatner(item.room_users)?.profileUrlName)" alt="avatar" />
-              <img v-else-if="item.type === 'group'" :src="profileImage.getUrl(getOwner(item.room_users, item.ownerUserId)?.profileUrlName)" alt="avatar" />
+              <img v-else-if="item.type === 'group'" :src="roomImage.getUrl(item.room_image_url)" alt="avatar" />
             </div>
             <div class="user-meta">
               <div v-if="item.type === 'dm'" class="user-name">{{ getPatner(item.room_users)?.nickname }}</div>

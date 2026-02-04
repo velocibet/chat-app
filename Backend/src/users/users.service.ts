@@ -2,7 +2,7 @@ import { Inject, Injectable, HttpException, ConflictException, BadRequestExcepti
 import * as argon2 from 'argon2';
 import { pool } from '../database';
 import { NotFound } from '@aws-sdk/client-s3';
-
+import crypto from 'crypto';
 import { RegisterDto, LoginDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
 
 interface LoginLog {
@@ -14,6 +14,61 @@ interface LoginLog {
 
 @Injectable()
 export class UsersService {
+  async createToken(email: string) {
+    const token = crypto.randomBytes(32).toString('hex');
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+    const expiresAt = new Date(
+      Date.now() + 30 * 60 * 1000 // 30분
+    );
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      await client.query(
+        `DELETE FROM email_verifications WHERE email = $1`,
+        [email]
+      );
+
+      await client.query(
+        `INSERT INTO email_verifications (email, token_hash, expires_at)
+        VALUES ($1, $2, $3)`,
+        [email, tokenHash, expiresAt]
+      );
+
+      await client.query('COMMIT');
+      return token;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw new InternalServerErrorException("알수 없는 오류가 발생했습니다.", {cause: error})
+    } finally {
+      client.release();
+    }
+  }
+
+  async verifyToken(token: string) {
+    const tokenHash = crypto
+      .createHash('sha256')
+      .update(token)
+      .digest('hex');
+
+    const { rowCount } = await pool.query(`
+      UPDATE email_verifications
+      SET used_at = NOW()
+      WHERE token_hash = $1
+        AND used_at IS NULL
+        AND expires_at > NOW();
+      `, [tokenHash])
+    
+    if (rowCount < 1) throw new BadRequestException("이미 사용되거나 만료된 인증입니다.");
+    
+    return "성공적으로 인증을 성공했습니다.";
+  }
+
   /**
    * 새로운 사용자를 등록합니다. (회원가입 로직)
    * @param body 회원가입에 필요한 정보 (username, password, email)
@@ -38,6 +93,12 @@ export class UsersService {
       );
 
       if (existingEmail.length > 0) throw new ConflictException('이미 사용 중인 이메일입니다.');
+
+      const { rows: existingVerify } = await client.query(`
+        SELECT email, used_at FROM email_verifications WHERE email = $1
+      `, [email])
+
+      if (existingVerify.length < 1 || !existingEmail[0].used_at) throw new UnauthorizedException("이메일 인증을 완료해주세요.");
 
       if (password.length < 7) throw new ConflictException('비밀번호는 최소 8글자 이상이어야 합니다.');
 

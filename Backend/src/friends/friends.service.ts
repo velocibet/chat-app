@@ -117,7 +117,7 @@ export class FriendsService {
   async findAllFriends(userId: number) {
     const { rows: friends } = await pool.query(
       `SELECT
-        u.id AS userId,
+        u.id AS "userId",
         u.username,
         u.nickname
       FROM users u

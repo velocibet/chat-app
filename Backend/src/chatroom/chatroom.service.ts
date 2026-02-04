@@ -23,7 +23,7 @@ export class ChatroomService {
                     ),
                     insert_members AS (
                     INSERT INTO room_user (room_id, user_id, role)
-                    SELECT id, unnest(ARRAY[$2::int, $3::int]), 'member' FROM upsert_room
+                    SELECT id, unnest(ARRAY[$2::int, $3::int]), 'member'::room_user_role FROM upsert_room
                     ON CONFLICT DO NOTHING
                     )
                     SELECT id FROM upsert_room;
@@ -47,7 +47,7 @@ export class ChatroomService {
                     SELECT 
                     new_room.id, 
                     m.user_id, 
-                    CASE WHEN m.user_id = $1 THEN 'owner' ELSE 'member' END
+                    CASE WHEN m.user_id = $1 THEN 'owner'::room_user_role ELSE 'member'::room_user_role END
                     FROM new_room, unnest($3::int[]) AS m(user_id)
                     RETURNING (SELECT id FROM new_room);
                 `, [userId, title || '그룹 채팅방', allMembers]);
@@ -59,7 +59,7 @@ export class ChatroomService {
             }
 
             await client.query('COMMIT');
-            return roomId;
+            return "성공적으로 채팅방을 생성했습니다.";
         } catch (error) {
             await client.query('ROLLBACK');
             if (error instanceof HttpException) throw error;
@@ -78,6 +78,7 @@ export class ChatroomService {
                 r.owner_user_id,
                 r.dm_hash,
                 r.created_at,
+                r.room_image_url,
                 json_agg(
                     json_build_object(
                         'id', ru.id,
@@ -115,6 +116,7 @@ export class ChatroomService {
             r.owner_user_id,
             r.dm_hash,
             r.created_at,
+            r.room_image_url,
             json_agg(
             json_build_object(
                 'id', ru.id,
@@ -144,5 +146,25 @@ export class ChatroomService {
         }
 
         return rows[0];
+    }
+
+    async checkImageUser(filename: string, userId: number) {
+        const { rowCount } = await pool.query(`
+            SELECT ru.id
+            FROM room_user ru
+            JOIN room r ON r.id = ru.room_id
+            WHERE r.room_image_url = $1
+                AND ru.user_id = $2
+        `, [filename, userId])
+
+        return rowCount > 0;
+    }
+
+    async saveImageUrl(userId: number, roomId: number, fileName: string, title: string){
+        await pool.query(`
+            UPDATE room
+            SET room_image_url = $1, title = $3
+            WHERE id = $2
+        `, [fileName, roomId, title]);
     }
 }

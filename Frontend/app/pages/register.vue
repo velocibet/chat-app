@@ -23,6 +23,12 @@ async function getRegister() {
     alert(res.message);
     router.push('/login');
 }
+
+async function verifyEmail() {
+    const res = await userApi.sendVerifyEmail(email.value);
+
+    alert(res.message);
+}
 </script>
 
 <template>
@@ -34,6 +40,7 @@ async function getRegister() {
                 <div class="form-input">
                     <input class="primary-input" v-model="username" type="text" placeholder="아이디" />
                     <input class="primary-input" v-model="email" type="text" placeholder="이메일" />
+                    <button class="primary-button" type="button" @click="verifyEmail">이메일 인증하기</button>
                     <input class="primary-input" v-model="password" type="password" placeholder="비밀번호" />
                 </div>
                 

@@ -14,6 +14,7 @@ const chatRoomApi = useChatroomApi();
 const chatSocket = useChatSocket();
 const authStore = useAuthStore();
 const profileImage = useProfileImage();
+const roomImage = useRoomImage();
 
 const roomId = route.params.roomId as string;
 const targetRoom = ref<ChatroomListItem | null>(null);
@@ -29,7 +30,6 @@ const isSending = ref<boolean | null>(false);
 const isEnd = ref<boolean>(false);
 const avatarMap = ref<Record<number, string>>({});
 
-// room 변경 감지 및 이벤트 리스너 정리 플래그
 let loadMessagesHandler: ((response: any) => void) | null = null;
 let newMessageHandler: ((response: any) => void) | null = null;
 
@@ -169,6 +169,10 @@ async function onScroll() {
   }
 }
 
+async function goToRoomSettings() {
+  await router.push(`/chat/${roomId}/settings?from=${encodeURIComponent(route.path)}`);
+}
+
 onMounted(async() => {
   await getRoom();
   
@@ -268,53 +272,63 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <section class="chat-container">
-    <div class="message-title">
-      <img v-if="targetRoom?.type === 'dm'" :src="profileImage.getUrl(
-        targetRoom.room_users.find((u: RoomUserRow) => u.userId !== authStore.user?.userId)?.profileUrlName
-      )"/>
-      <img v-else-if="targetRoom?.type === 'group'" :src="profileImage.getUrl(
-        targetRoom.room_users.find((u: RoomUserRow) => u.userId === targetRoom?.owner_user_id)?.profileUrlName
-      )" />
-      <div class="title-content">
-        <h4>{{ roomTitle }}</h4>
-        <span>대화를 시작해보세요.</span>
+  <div class="room-container">
+    <section class="chat-container">
+      <div class="message-title">
+        <img v-if="targetRoom?.type === 'dm'" :src="profileImage.getUrl(
+          targetRoom.room_users.find((u: RoomUserRow) => u.userId !== authStore.user?.userId)?.profileUrlName
+        )"/>
+        <img v-else-if="targetRoom?.type === 'group'" :src="roomImage.getUrl(
+          targetRoom.room_image_url
+        )" />
+        <div class="title-content">
+          <h4>{{ roomTitle }}</h4>
+          <span>대화를 시작해보세요.</span>
+        </div>
+        <!-- <div class="isOnline">
+          <span v-if="isFriendOnline">🟢 온라인</span>
+          <span v-else>⛔ 오프라인</span>
+        </div> -->
+        <p v-if="targetRoom?.type === 'group'" @click="goToRoomSettings" style="cursor: pointer;">︙</p>
       </div>
-      <!-- <div class="isOnline">
-        <span v-if="isFriendOnline">🟢 온라인</span>
-        <span v-else>⛔ 오프라인</span>
-      </div> -->
-    </div>
-    <div class="message-container" ref="messageContainer" @scroll="onScroll">
-      <div v-for="(item, index) in messages" :key="item.id" class="message">
-        <div v-if="shouldShowHeader(index)" class="message-top">
-          <img :src="profileImage.getUrl(
-            targetRoom?.room_users.find((u: RoomUserRow) => u.userId === item.sender_id)?.profileUrlName
-          )" />
-          <h4>{{ targetRoom?.room_users.find((u: RoomUserRow) => u.userId === item.sender_id)?.nickname }}</h4>
-          <span>{{ formatKoreanTime(item.created_at) }}</span>
-          <p @click.stop="toggleMenu(item.id)">︙</p>
-          <div v-if="openMenuId === item.id" class="message-menu" >
-            <button v-if="item.sender_id === authStore.user?.userId" @click="deleteMessage(item)">삭제</button>
-            <button v-else @click="reportMessage">신고</button>
+      <div class="message-container" ref="messageContainer" @scroll="onScroll">
+        <div v-for="(item, index) in messages" :key="item.id" class="message">
+          <div v-if="shouldShowHeader(index)" class="message-top">
+            <img :src="profileImage.getUrl(
+              targetRoom?.room_users.find((u: RoomUserRow) => u.userId === item.sender_id)?.profileUrlName
+            )" />
+            <h4>{{ targetRoom?.room_users.find((u: RoomUserRow) => u.userId === item.sender_id)?.nickname }}</h4>
+            <span>{{ formatKoreanTime(item.created_at) }}</span>
+            <p @click.stop="toggleMenu(item.id)">︙</p>
+            <div v-if="openMenuId === item.id" class="message-menu" >
+              <button v-if="item.sender_id === authStore.user?.userId" @click="deleteMessage(item)">삭제</button>
+              <button v-else @click="reportMessage">신고</button>
+            </div>
           </div>
+          <div v-if="item.isfile === 1">
+            <img :src="getImageUrl(item)" class="chat-image" />
+          </div>
+          <p v-else>{{ item.content }}</p>
         </div>
-        <div v-if="item.isfile === 1">
-          <img :src="getImageUrl(item)" class="chat-image" />
-        </div>
-        <p v-else>{{ item.content }}</p>
       </div>
-    </div>
-    <div v-if="previewUrl" class="image-preview">
-      <img :src="previewUrl" class="chat-image" />
-      <button @click="cancelImage">❌</button>
-    </div>
-    <div class="message-form">
-      <button @click="selectFile" class="primary-button">+</button>
-      <form @submit.prevent="sendMessage">
-        <input v-model="input" type="text" placeholder="메세지 입력" class="primary-input" />
-      </form>
-    </div>
-    <input type="file" ref="fileInput" @change="handleFileChange" style="display:none" />
-  </section>
+      <div v-if="previewUrl" class="image-preview">
+        <img :src="previewUrl" class="chat-image" />
+        <button @click="cancelImage">❌</button>
+      </div>
+      <div class="message-form">
+        <button @click="selectFile" class="primary-button">+</button>
+        <form @submit.prevent="sendMessage">
+          <input v-model="input" type="text" placeholder="메세지 입력" class="primary-input" />
+        </form>
+      </div>
+      <input type="file" ref="fileInput" @change="handleFileChange" style="display:none" />
+    </section>
+    <section class="users-container">
+      <h4>참가자 목록</h4>
+      <div v-for="user in targetRoom?.room_users">
+        <p>{{ user.nickname }}</p>
+        <span>{{ user.username }}</span>
+      </div>
+    </section>
+  </div>
 </template>
