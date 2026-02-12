@@ -41,7 +41,7 @@ jobs:
         run: |
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
             cd /var/www/chat-app-dev/Backend &&
-            export DATABASE_URL=${{ secrets.DATABASE_URL }} &&
+            export DATABASE_URL='${{ secrets.DATABASE_URL_DEV }}' &&
             npx node-pg-migrate up
           "
 
