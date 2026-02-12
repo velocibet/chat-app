@@ -84,3 +84,5 @@ ALTER TABLE IF EXISTS "public"."email_verifications" ALTER COLUMN "token_hash" S
 ALTER TABLE IF EXISTS "public"."email_verifications" ALTER COLUMN "expires_at" SET NOT NULL;
 ALTER TABLE IF EXISTS "public"."email_verifications" ALTER COLUMN "created_at" SET NOT NULL;
 --- END ALTER TABLE "public"."email_verifications" ---
+
+
