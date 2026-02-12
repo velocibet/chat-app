@@ -30,11 +30,22 @@ jobs:
         run: |
             ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /var/www/chat-app-dev/Backend /var/www/chat-app-dev/Frontend"
 
-      # 4. Backend 배포
+      # 4. Backend 배포 (클린 포함)
       - name: Deploy Backend
         run: |
-          rsync -avz --rsync-path="mkdir -p /var/www/chat-app-dev/Backend && rsync" ./Backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Backend/
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app-dev/Backend && npm install && npm run build && pm2 restart chat-app-dev || pm2 start dist/main.js --name chat-app-dev"
+          # 배포 디렉토리 초기화
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "rm -rf /var/www/chat-app-dev/Backend/*"
+          
+          # 새로운 파일 복사
+          rsync -avz ./Backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Backend/
+          
+          # 빌드 + PM2 재시작
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
+            cd /var/www/chat-app-dev/Backend &&
+            npm install &&
+            npm run build &&
+            pm2 restart chat-app-dev || pm2 start dist/main.js --name chat-app-dev
+          "
       
       # 4-1. DB 마이그레이션
       - name: Run DB Migrations
@@ -45,8 +56,20 @@ jobs:
             npx node-pg-migrate up
           "
 
-      # 5. Frontend 배포
+      
+      # 5. Frontend 배포 (클린 포함)
       - name: Deploy Frontend
         run: |
-          rsync -avz --rsync-path="mkdir -p /var/www/chat-app-dev/Frontend && rsync" ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Frontend/
-          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app-dev/Frontend && npm install && npm run build && pm2 restart index-dev || pm2 start .output/server/index.mjs --name index-dev"
+          # 배포 디렉토리 초기화
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "rm -rf /var/www/chat-app-dev/Frontend/*"
+          
+          # 새로운 파일 복사
+          rsync -avz ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Frontend/
+          
+          # 빌드 + PM2 재시작
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
+            cd /var/www/chat-app-dev/Frontend &&
+            npm install &&
+            npm run build &&
+            pm2 restart index-dev || pm2 start .output/server/index.mjs --name index-dev
+          "
