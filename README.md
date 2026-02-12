@@ -59,3 +59,7 @@ Velocibet은 "메신저 구현은 쉽지 않을까?"라는 단순한 호기심�
 - **IndexedDB 기반 메세지 로컬 저장 및 오프라인 캐싱 기능 추가**
 - **End-to-End Encryption (E2EE) (서버가 메시지를 복호화할 수 없는 구조 설계)**
 - Zero-Knowledge Architecture (서버에 어떠한 개인정보도 평문으로 남기지 않는 설계 지향)
+
+## Social
+- [X](https://x.com/velocibet)
+- [Blog](https://blog.velocibet.com/)
