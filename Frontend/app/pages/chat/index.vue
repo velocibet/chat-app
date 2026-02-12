@@ -1,46 +1,24 @@
 <script setup lang="ts">
-import type { Friend } from "~/types/friends";
-import type { ApiResponse } from "~/types/response";
+import FriendList from '~/components/FriendList.vue';
+import FriendRequests from '~/components/FriendRequests.vue';
 
+const { socket, connect } = useSocket();
 const friendsApi = useFriendsApi();
-const userApi = useUserApi();
+const chatSocket = useChatSocket();
 
-const { data: friendsData, refresh: refreshFriends } = await useAsyncData<ApiResponse<Friend[]>>('friends', () => friendsApi.getFriends());
-const { data: requestsData, refresh: refreshRequests } = await useAsyncData<ApiResponse<Friend[]>>('requests', () => friendsApi.getRequests());
+const friendListRef = ref<InstanceType<typeof FriendList> | null>(null);
+const friendRequestsRef = ref<InstanceType<typeof FriendRequests> | null>(null);
 
-const friends = computed<Friend[]>(() => friendsData.value?.data ?? []);
-const requests = computed<Friend[]>(() => requestsData.value?.data ?? []);
-
+const blockPopup = ref(false);
+const blockPopupRef = ref<HTMLElement | null>(null);
+const selectedUserId = ref<number | null>(null);
 const friendName = ref<string>("");
-const popup = ref<boolean>(false);
-const selectedUserId = ref<string | null>(null);
+const activeTab = ref<'friends' | 'requests'>('friends');
 
 definePageMeta({
   layout: "chat",
   middleware: ["auth"],
 });
-
-async function acceptRequests(fi: string) {
-  const res: ApiResponse = await friendsApi.handleRequest(fi, { status: "accepted" });
-
-  if (res.success) {
-    await refreshFriends(); 
-    await refreshRequests();
-  }
-
-  alert(res.message);
-}
-
-async function rejectRequests(fi: string) {
-  const res: ApiResponse = await friendsApi.handleRequest(fi, { status: "rejected" });
-
-  if (res.success) {
-    await refreshFriends(); 
-    await refreshRequests();
-  }
-
-  alert(res.message);
-}
 
 async function addFriend() {
   const res = await friendsApi.requestFriend({
@@ -48,79 +26,82 @@ async function addFriend() {
   });
 
   if (res.success) {
-    await refreshFriends(); 
-    await refreshRequests();
+    await friendRequestsRef.value?.refreshRequests();
+    await friendListRef.value?.refreshFriends();
   }
 
   alert(res.message);
 }
 
-function getPopup() {
-  popup.value = !popup.value;
+async function refresh(res: socketResponse) {
+  await friendRequestsRef.value?.refreshRequests();
+  await friendListRef.value?.refreshFriends();
 }
+
+function openBlockList() {
+  blockPopup.value = true;
+}
+
+function handleClickOutside(event: MouseEvent) {
+  if (!blockPopupRef.value) return;
+
+  if (!(blockPopupRef.value.contains(event.target as Node))) {
+    blockPopup.value = false;
+  }
+}
+
+onMounted(async () => {
+  await connect();
+  chatSocket.onFriendRequest(refresh);
+
+  document.addEventListener('click', handleClickOutside);
+});
+
+onBeforeUnmount(async () => {
+  await chatSocket.offFriendRequest(refresh);
+  document.removeEventListener('click', handleClickOutside);
+});
+
 </script>
 
 <template>
   <section class="request-container">
-    <h3>친구 추가</h3>
-    <form @submit.prevent="addFriend">
+    <h3 class="title-text">친구 추가</h3>
+    <form class="request-form" @submit.prevent="addFriend">
       <input
         class="primary-input"
         type="text"
         placeholder="아이디를 입력하세요."
         v-model="friendName"
       />
-      <button class="primary-button" type="submit">전송</button>
     </form>
 
-    <h3>친구 요청</h3>
-    <div>
-      <div
-        class="request-item"
-        v-for="(item, index) in requests"
-        :key="index"
-      >
-        <div>
-          <h5>{{ item.nickname }}</h5>
-          <span>{{ item.username }}</span>
-        </div>
-        <div>
-          <button
-            class="outline-button"
-            @click="acceptRequests(item.username)"
-          >
-            수락
-          </button>
-          <button
-            class="primary-button"
-            @click="rejectRequests(item.username)"
-          >
-            거절
-          </button>
-        </div>
-      </div>
+    <nav class="title-nav">
+      <h3 class="item" @click="activeTab = 'friends'">친구 목록</h3>
+      <h3 class="item" @click="activeTab = 'requests'">친구 요청</h3>
+      <h3 class="item" @click="openBlockList">차단 목록</h3>
+    </nav>
+
+    <div v-if="activeTab == 'friends'">
+      <FriendList ref="friendListRef" @select="selectedUserId = $event" />
     </div>
 
-    <h3>친구 목록</h3>
-    <div v-for="(item, index) in friends" :key="index">
-      <p
-        @click="selectedUserId = String(item.userId)"
-        style="cursor: pointer"
-      >
-        {{ item.username }}
-      </p>
+    <div v-if="activeTab == 'requests'">
+      <FriendRequests ref="friendRequestsRef" />
     </div>
-    <!-- <Teleport to="body">
+
+    <Teleport to="body">
       <UserPopup
         v-if="selectedUserId"
         :userId="selectedUserId"
         @close="selectedUserId = null"
       />
-    </Teleport> -->
 
-    <button class="outline-button" @click="getPopup">채팅방 만들기</button>
-    <Teleport to="body">
-      <RoomPopup v-if="popup" @close="popup = false" />
+      <BlockList
+        v-if="blockPopup"
+        ref="blockPopupRef"
+        @close="blockPopup = false"
+      />
     </Teleport>
   </section>
 </template>

@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsNumber, IsString, MinLength } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsNumber, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class RegisterDto {
   @IsString({ message: '사용자 이름은 문자열이어야 합니다.' })
@@ -32,6 +32,10 @@ export class UpdateDto {
 
   @IsString({ message: "닉네임을 입력하세요." })
   nickname: string;
+
+  @IsOptional()
+  @IsString({ message: "소개글은 문자열이어야 합니다." })
+  bio?: string;
 }
 
 export class ChangePasswordDto {

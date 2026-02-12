@@ -28,5 +28,12 @@ export const useChatroomApi = () => {
      */
     updateRoomSettings: (formData: FormData) => 
       api.post<ApiResponse<any>>("/room/image", formData),
+
+    /**
+     * 채팅방 나가기
+     * @param roomId 나갈 채팅방의 Id
+     */
+    leaveRoom: (roomId: number) =>
+      api.patch<ApiResponse<any>>(`room/${roomId}/leave`)
   };
 };

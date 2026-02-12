@@ -18,7 +18,7 @@ export interface Room {
 export interface RoomUserRow {
   id: number;
   room_id: number;
-  userId: number;
+  user_id: number;
   username: string;
   nickname: string;
   profileUrlName: string;

@@ -1,5 +1,5 @@
 import { useApi } from "../useApi";
-import type { FriendRequestDto, HandleFriendRequestDto, Friend } from "~/types/friends";
+import { type FriendRequestDto, type HandleFriendRequestDto, type Friend, type Block } from "~/types/friends";
 
 export const useFriendsApi = () => {
   const api = useApi('/friends');
@@ -8,7 +8,7 @@ export const useFriendsApi = () => {
     /** [GET] 친구 목록(수락된 상태) 조회 */
     getFriends: () => api.get<Friend[]>(''),
 
-    /** [GET] 친구 목록(수락된 상태) 조회 */
+    /** [GET] 친구 요청 목록 조회 */
     getRequests: () => api.get<Friend[]>('/requests'),
 
     /** [POST] 친구 요청 보내기 */
@@ -25,5 +25,13 @@ export const useFriendsApi = () => {
     /** [POST] 상대방 차단 */
     blockUser: (receiverUsername: string) => 
       api.post<string>(`/block/${receiverUsername}`),
+
+    /** [DELETE] 상대방 차단 해제 */
+    unblockUser: (receiverUsername: string) => 
+      api.delete<string>(`/block/${receiverUsername}`),
+
+    /** [GET] 차단한 유저 목록 불러오기 */
+    getBlockedUsers: () => 
+      api.get<Block[]>(`/blocks`),
   };
 };

@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia';
 
 export const useFriendsStore = defineStore('friends', () => {
-  const friends = ref<Friend[]>([]);
+  const friends = ref<Friend[] | null>(null);
 
   /**
    * 사용자의 친구 목록을 저장합니다.

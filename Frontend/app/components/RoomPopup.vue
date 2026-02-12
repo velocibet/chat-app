@@ -1,39 +1,35 @@
 <script setup lang="ts">
-import { on } from 'events';
 import '~/assets/css/chat-layout.css';
 
 const friendsStore = useFriendsStore();
 const chatroomApi = useChatroomApi();
 const selectedFriends = ref<number[]>([]);
 const groupName = ref<string>('');
+const popupRoot = ref<HTMLElement | null>(null);
+defineExpose({ popupRoot });
 
 async function createRoom() {
-    console.log(selectedFriends)
-    if (selectedFriends.value.length > 1) {
-        const response = await chatroomApi.createRoom({
-            type: "group",
-            membersArray: selectedFriends.value,
-            title: groupName.value
-        });
-        alert(response.message);
-    } else if (selectedFriends.value.length === 0) {
-        alert("최소 한명 이상 선택해야 합니다.")
-    } else {
-        const response = await chatroomApi.createRoom({
-            type: "dm",
-            member: selectedFriends.value[0]
-        });
-        alert(response.message);
-    }
+  if (selectedFriends.value.length > 1) {
+    const response = await chatroomApi.createRoom({
+        type: "group",
+        membersArray: selectedFriends.value,
+        title: groupName.value
+    });
+    alert(response.message);
+  } else if (selectedFriends.value.length === 0) {
+    alert("최소 한명 이상 선택해야 합니다.")
+  } else {
+    const response = await chatroomApi.createRoom({
+        type: "dm",
+        member: selectedFriends.value[0]
+    });
+    alert(response.message);
+  }
 }
-
-onMounted(async () => {
-    console.log(friendsStore.friends);
-});
 </script>
 
 <<template>
-  <div class="room-popup">
+  <div ref="popupRoot" class="room-popup">
     <header>
       <h3>채팅방 만들기</h3>
     </header>

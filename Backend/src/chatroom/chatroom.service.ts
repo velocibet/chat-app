@@ -1,4 +1,4 @@
-import { Injectable, HttpException, InternalServerErrorException, ForbiddenException, BadRequestException } from '@nestjs/common';
+import { Injectable, HttpException, InternalServerErrorException, ForbiddenException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { pool } from '../database';
 
 @Injectable()
@@ -12,6 +12,8 @@ export class ChatroomService {
             let roomId: number;
 
             if (type === "dm") {
+                if (userId === member) throw new BadRequestException("자기 자신과 채팅을 할 수 없습니다.");
+                
                 const roomName = [userId, member].sort((a: number, b: number) => a - b).join('_');
                 
                 const res = await client.query(`
@@ -59,7 +61,11 @@ export class ChatroomService {
             }
 
             await client.query('COMMIT');
-            return "성공적으로 채팅방을 생성했습니다.";
+
+            return {
+                message: "성공적으로 채팅방을 생성했습니다.",
+                data: roomId
+            }
         } catch (error) {
             await client.query('ROLLBACK');
             if (error instanceof HttpException) throw error;
@@ -83,7 +89,7 @@ export class ChatroomService {
                     json_build_object(
                         'id', ru.id,
                         'room_id', r.id,
-                        'userId', u.id,
+                        'user_id', u.id,
                         'username', u.username,
                         'nickname', u.nickname,
                         'profileUrlName', u.profile_url_name,
@@ -93,52 +99,59 @@ export class ChatroomService {
                     )
                 ) AS room_users
             FROM room r
-            JOIN room_user ru ON ru.room_id = r.id
+            JOIN room_user ru ON ru.room_id = r.id AND ru.deleted_at IS NULL
             JOIN users u ON u.id = ru.user_id
-            WHERE r.id IN (
+            WHERE r.deleted_at IS NULL
+            AND r.id IN (
                 SELECT room_id
                 FROM room_user
                 WHERE user_id = $1
+                    AND deleted_at IS NULL
             )
             GROUP BY r.id;
-            `, [userId]
-        );
+        `, [userId]);
 
         return rows;
     }
 
     async findOne(roomId: number, userId: number) {
         const { rows } = await pool.query(
-        `
-        SELECT r.id,
-            r.type,
-            r.title,
-            r.owner_user_id,
-            r.dm_hash,
-            r.created_at,
-            r.room_image_url,
-            json_agg(
-            json_build_object(
-                'id', ru.id,
-                'room_id', r.id,
-                'userId', u.id,
-                'username', u.username,
-                'nickname', u.nickname,
-                'profileUrlName', u.profile_url_name,
-                'role', ru.role,
-                'joined_at', ru.joined_at,
-                'left_at', ru.left_at
+            `
+            SELECT r.id,
+                r.type,
+                r.title,
+                r.owner_user_id,
+                r.dm_hash,
+                r.created_at,
+                r.room_image_url,
+                json_agg(
+                    json_build_object(
+                        'id', ru.id,
+                        'room_id', r.id,
+                        'user_id', u.id,
+                        'username', u.username,
+                        'nickname', u.nickname,
+                        'profileUrlName', u.profile_url_name,
+                        'role', ru.role,
+                        'joined_at', ru.joined_at,
+                        'left_at', ru.left_at
+                    )
+                ) AS room_users
+            FROM room r
+            JOIN room_user ru ON ru.room_id = r.id AND ru.deleted_at IS NULL
+            JOIN users u ON u.id = ru.user_id
+            WHERE r.id = $1
+            AND r.deleted_at IS NULL
+            AND EXISTS (
+                SELECT 1 
+                FROM room_user 
+                WHERE room_id = r.id 
+                    AND user_id = $2
+                    AND deleted_at IS NULL
             )
-            ) AS room_users
-        FROM room r
-        JOIN room_user ru ON ru.room_id = r.id
-        JOIN users u ON ru.user_id = u.id
-        WHERE r.id = $1 AND EXISTS (
-            SELECT 1 FROM room_user WHERE room_id = r.id AND user_id = $2
-        )
-        GROUP BY r.id;
-        `,
-        [roomId, userId]
+            GROUP BY r.id;
+            `,
+            [roomId, userId]
         );
 
         if (!rows || rows.length === 0) {
@@ -166,5 +179,86 @@ export class ChatroomService {
             SET room_image_url = $1, title = $3
             WHERE id = $2
         `, [fileName, roomId, title]);
+    }
+
+    async leave(userId: number, roomId: number, gateway: any) {
+        const client = await pool.connect();
+
+        try {
+            await client.query('BEGIN');
+
+            const { rowCount } = await client.query(`
+                SELECT 1
+                FROM room
+                WHERE id = $1 AND owner_user_id = $2
+            `, [roomId, userId]);
+
+            const now = new Date();
+
+            if (rowCount > 0) {
+                await client.query(`
+                    UPDATE room
+                    SET deleted_at = $2
+                    WHERE id = $1
+                `, [roomId, now]);
+
+                await client.query(`
+                    UPDATE room_user
+                    SET deleted_at = $2
+                    WHERE room_id = $1
+                `, [roomId, now]);
+            } else {
+                await client.query(`
+                    UPDATE room_user
+                    SET deleted_at = $3
+                    WHERE room_id = $1 AND user_id = $2
+                `, [roomId, userId, now]);
+            }
+
+            const result = await this.findAll(userId);
+            gateway.updateRoomList(userId, result);
+
+            await client.query('COMMIT');
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw new BadRequestException(error);
+        } finally {
+            client.release();
+        }
+    }
+
+    async isOwner(userId: number, roomId: number) {
+        const { rowCount } = await pool.query(`
+            SELECT u.id
+            FROM users u
+            JOIN room r
+            ON r.id = $1 AND r.owner_user_id = u.id
+            WHERE u.id = $2
+        `, [roomId, userId])
+
+        return rowCount > 0;
+    }
+
+    async invite(userId: number, roomId: number, member: number) {
+        const { rowCount } = await pool.query(`
+            INSERT INTO room_user (room_id, user_id)
+            SELECT $1, $3
+            WHERE EXISTS (
+                SELECT 1
+                FROM rooms
+                WHERE id = $1
+                AND owner_user_id = $2
+            )
+            AND NOT EXISTS (
+                SELECT 1
+                FROM room_user
+                WHERE room_id = $1
+                AND user_id = $3
+            )
+        `, [roomId, userId, member]);
+
+        if ( rowCount === 0 ) throw new UnauthorizedException("초대 할 수 없습니다.");
+
+        return "성공적으로 초대했습니다."
     }
 }

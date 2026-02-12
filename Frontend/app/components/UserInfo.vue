@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { LogOut } from 'lucide-vue-next';
+
 const config = useRuntimeConfig();
 const userApi = useUserApi();
 const authStore = useAuthStore();
@@ -39,7 +41,7 @@ async function logout() {
     </div>
 
     <div class="logout" @click="logout">
-      로그아웃
+      <LogOut />
     </div>
   </div>
 </template>

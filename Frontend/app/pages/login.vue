@@ -1,10 +1,9 @@
 <script lang="ts" setup>
-import { useUserApi } from '~/composables/api/useUserApi';
-import { useAuthStore } from '#imports';
+import auth from '~/middleware/auth';
 
 const userApi = useUserApi();
-const authStore = useAuthStore();
 const router = useRouter();
+const authStore = useAuthStore();
 
 const username = ref<string>('');
 const password = ref<string>('');
@@ -19,9 +18,14 @@ async function getLogin() {
         alert(res.message);
         return
     }
-
-    authStore.setUser(res.data);
-    router.push('/chat');
+    
+    const me = await userApi.getMe();
+    if (me.success) {
+        authStore.setUser(me.data);
+        router.push('/chat');
+    } else {
+        alert(me.message);
+    }
 }
 </script>
 

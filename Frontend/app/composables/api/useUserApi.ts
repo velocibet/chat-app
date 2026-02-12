@@ -14,7 +14,7 @@ export const useUserApi = () => {
     register: (body: RegisterDto) => api.post('/register', body),
 
     /** [POST] 로그인 */
-    login: (body: LoginDto) => api.post<LoginReponse>('/login', body),
+    login: (body: LoginDto) => api.post<ApiResponse<LoginReponse>>('/login', body),
 
     /** [GET] 내 정보 확인 (세션 기반) */
     getMe: () => api.get<User>('/me'),

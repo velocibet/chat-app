@@ -151,7 +151,7 @@ export class UsersService {
    * @param username 사용자의 이름
    * @param nickname 사용자의 닉네임
    */
-  async updateProfile(userId: number, username: string, nickname: string, fileName: string) {
+  async updateProfile(userId: number, username: string, nickname: string, bio?: string, fileName?: string) {
     const client = await pool.connect();
     try {
       const { rows: users } = await client.query(
@@ -161,12 +161,27 @@ export class UsersService {
 
       if (users.length < 1) throw new NotFoundException('유저가 존재하지 않습니다.');
 
-      const result = await client.query(
-        'UPDATE users SET nickname = $1, profile_url_name = $3 WHERE id = $2 RETURNING id AS userId, username, nickname, bio, profile_url_name AS profileUrlName;',
-        [nickname, userId, fileName]
-      );
+      if (fileName) {
+        const result = await client.query(`
+          UPDATE users
+          SET nickname = $1, profile_url_name = $3, bio = $4
+          WHERE id = $2
+          RETURNING id AS userId, username, nickname, bio, profile_url_name AS profileUrlName;
+          `, [nickname, userId, fileName, bio]
+        );
 
-      return result.rows[0];
+        return result.rows[0];
+      } else {
+        const result = await client.query(`
+          UPDATE users
+          SET nickname = $1, bio = $3
+          WHERE id = $2
+          RETURNING id AS userId, username, nickname, bio, profile_url_name AS profileUrlName;
+          `, [nickname, userId, bio]
+        );
+
+        return result.rows[0];
+      }
     } catch (error) {
       await client.query('ROLLBACK');
       if (error instanceof HttpException) {

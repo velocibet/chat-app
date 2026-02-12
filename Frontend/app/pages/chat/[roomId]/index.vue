@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import '~/assets/css/chat-room.css';
+import { Crown } from 'lucide-vue-next';
 
 definePageMeta({
   layout: "chat",
   middleware: ["auth"],
+  // ssr: false
 });
 
 const router = useRouter();
@@ -28,10 +30,13 @@ const pendingImage = ref<File | null>(null);
 const previewUrl = ref<string | null>(null);
 const isSending = ref<boolean | null>(false);
 const isEnd = ref<boolean>(false);
-const avatarMap = ref<Record<number, string>>({});
+// const avatarMap = ref<Record<number, string>>({});
+const selectedUserId = ref<number | null>();
+const isInitialLoading = ref(true);
 
 let loadMessagesHandler: ((response: any) => void) | null = null;
 let newMessageHandler: ((response: any) => void) | null = null;
+let deletedMessageHandler: ((response: any) => void) | null = null;
 
 function selectFile () {
   fileInput.value?.click()
@@ -42,13 +47,14 @@ async function getRoom() {
 
   if (!res.success) {
     alert(res.message);
+    router.go(-1);
     return
   }
 
   targetRoom.value = res.data;
 
   if (targetRoom.value.type === "dm") {
-    const opponent = targetRoom.value.room_users.find((u: RoomUserRow) => u.userId !== authStore.user?.userId);
+    const opponent = targetRoom.value.room_users.find((u: RoomUserRow) => u.user_id !== authStore.user?.userId);
     
     if (opponent) {
       roomTitle.value = opponent.nickname;
@@ -92,6 +98,8 @@ const closeMenu = () => {
 
 async function deleteMessage(item: any) {
   if (!confirm("정말 메세지를 삭제하시겠습니까?")) return;
+  chatSocket.deleteMessageInRoom(+roomId, item.id, item.content);
+
   closeMenu();
 }
 
@@ -177,36 +185,26 @@ onMounted(async() => {
   await getRoom();
   
   try {
-    // socket이 연결될 때까지 대기
     await chatSocket.waitForSocket();
-    
     await chatSocket.joinRoom(+roomId);
   } catch (error) {
     console.error('채팅방 입장 실패:', error);
     alert(`채팅방 입장 실패: ${error}`);
     return;
+  } finally {
+    isInitialLoading.value = false;
   }
 
-  // 메시지 초기화
   messages.value = [];
   isEnd.value = false;
 
-  // socket 인스턴스 가져오기
-  const socketInstance = chatSocket.socket;
-  if (!socketInstance) {
-    alert('소켓 연결 오류');
-    return;
-  }
+  // if (loadMessagesHandler) {
+  //   socketInstance.off('loadMessages', loadMessagesHandler);
+  // }
+  // if (newMessageHandler) {
+  //   socketInstance.off('newMessage', newMessageHandler);
+  // }
 
-  // 이전 이벤트 핸들러 제거
-  if (loadMessagesHandler) {
-    socketInstance.off('loadMessages', loadMessagesHandler);
-  }
-  if (newMessageHandler) {
-    socketInstance.off('newMessage', newMessageHandler);
-  }
-
-  // 새로운 이벤트 핸들러 정의
   loadMessagesHandler = (response: any) => {
     if (!response?.data) {
       return;
@@ -219,7 +217,6 @@ onMounted(async() => {
       return;
     }
 
-    // messageContainer 존재 확인
     if (!messageContainer.value) {
       return;
     }
@@ -245,38 +242,48 @@ onMounted(async() => {
     downScroll();
   };
 
-  // 이벤트 리스너 등록
-  socketInstance.on('loadMessages', loadMessagesHandler);
-  socketInstance.on('newMessage', newMessageHandler);
+  deletedMessageHandler = (response: any) => {
+    if (!response?.data) return;
+    const deletedId = response.data.id;
+    messages.value = messages.value.filter(msg => msg.id !== deletedId);
+  };
 
-  // 메시지 로드 요청
+  chatSocket.onLoadMessages(loadMessagesHandler);
+  chatSocket.onNewMessage(newMessageHandler);
+  chatSocket.onDeletedMessage(deletedMessageHandler);
+
   chatSocket.loadMessages(+roomId, 30);
 });
 
 onUnmounted(() => {
-  // 이벤트 리스너 정리
   if (loadMessagesHandler) {
-    chatSocket.socket?.off('loadMessages', loadMessagesHandler);
+    chatSocket.offLoadMessages(loadMessagesHandler);
     loadMessagesHandler = null;
   }
   if (newMessageHandler) {
-    chatSocket.socket?.off('newMessage', newMessageHandler);
+    chatSocket.offNewMessage(newMessageHandler);
     newMessageHandler = null;
   }
+  if (deletedMessageHandler) {
+    chatSocket.offDeletedMessage(deletedMessageHandler);
+    deletedMessageHandler = null;
+  }
 
-  // room 나가기
   chatSocket.leaveRoom(+roomId);
 })
-
 
 </script>
 
 <template>
-  <div class="room-container">
+  <div v-if="isInitialLoading">
+    <div class="spinner"></div>
+    <p>메세지 목록을 불러오는 중입니다.</p>
+  </div>
+  <div v-else class="room-container">
     <section class="chat-container">
       <div class="message-title">
         <img v-if="targetRoom?.type === 'dm'" :src="profileImage.getUrl(
-          targetRoom.room_users.find((u: RoomUserRow) => u.userId !== authStore.user?.userId)?.profileUrlName
+          targetRoom.room_users.find((u: RoomUserRow) => u.user_id !== authStore.user?.userId)?.profileUrlName
         )"/>
         <img v-else-if="targetRoom?.type === 'group'" :src="roomImage.getUrl(
           targetRoom.room_image_url
@@ -289,15 +296,15 @@ onUnmounted(() => {
           <span v-if="isFriendOnline">🟢 온라인</span>
           <span v-else>⛔ 오프라인</span>
         </div> -->
-        <p v-if="targetRoom?.type === 'group'" @click="goToRoomSettings" style="cursor: pointer;">︙</p>
+        <p v-if="targetRoom?.type === 'group' && authStore.user?.userId == targetRoom?.owner_user_id" @click="goToRoomSettings" style="cursor: pointer;">︙</p>
       </div>
       <div class="message-container" ref="messageContainer" @scroll="onScroll">
         <div v-for="(item, index) in messages" :key="item.id" class="message">
           <div v-if="shouldShowHeader(index)" class="message-top">
             <img :src="profileImage.getUrl(
-              targetRoom?.room_users.find((u: RoomUserRow) => u.userId === item.sender_id)?.profileUrlName
+              targetRoom?.room_users.find((u: RoomUserRow) => u.user_id === item.sender_id)?.profileUrlName
             )" />
-            <h4>{{ targetRoom?.room_users.find((u: RoomUserRow) => u.userId === item.sender_id)?.nickname }}</h4>
+            <h4>{{ targetRoom?.room_users.find((u: RoomUserRow) => u.user_id === item.sender_id)?.nickname ?? '알수 없는 사용자' }}</h4>
             <span>{{ formatKoreanTime(item.created_at) }}</span>
             <p @click.stop="toggleMenu(item.id)">︙</p>
             <div v-if="openMenuId === item.id" class="message-menu" >
@@ -318,17 +325,33 @@ onUnmounted(() => {
       <div class="message-form">
         <button @click="selectFile" class="primary-button">+</button>
         <form @submit.prevent="sendMessage">
-          <input v-model="input" type="text" placeholder="메세지 입력" class="primary-input" />
+          <input v-model="input" type="text" placeholder="Enter를 눌러 전송" class="primary-input" />
         </form>
       </div>
       <input type="file" ref="fileInput" @change="handleFileChange" style="display:none" />
     </section>
     <section class="users-container">
-      <h4>참가자 목록</h4>
-      <div v-for="user in targetRoom?.room_users">
-        <p>{{ user.nickname }}</p>
-        <span>{{ user.username }}</span>
+      <h3>참가자 목록</h3>
+      <div class="users-list">
+        <div v-for="user in targetRoom?.room_users" class="user" @click="selectedUserId = user.user_id">
+          <div class="user-avatar">
+            <img :src="profileImage.getUrl(user?.profileUrlName)" />
+          </div>
+          <Crown v-if="user.user_id == targetRoom?.owner_user_id" :size="20" color="#FFD700" />
+          <div class="user-info">
+            <h5>{{ user.nickname }}</h5>
+            <span>{{ user.username }}</span>
+          </div>
+        </div>
       </div>
     </section>
   </div>
+
+  <Teleport to="body">
+    <UserPopup
+      v-if="selectedUserId"
+      :userId="selectedUserId"
+      @close="selectedUserId = null"
+    />
+  </Teleport>
 </template>

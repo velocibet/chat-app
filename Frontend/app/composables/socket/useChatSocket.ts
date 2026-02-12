@@ -1,7 +1,7 @@
 import type { JoinDirectRoom, SendMessage, DeleteMessage } from "~/types/chat";
 
 export const useChatSocket = () => {
-  const { socket } = useSocketStore();
+  const socketStore = useSocketStore();
 
   // 채팅방 join 상태
   const joinedRooms = ref<Set<string>>(new Set());
@@ -10,11 +10,11 @@ export const useChatSocket = () => {
   const waitForSocket = (): Promise<void> => {
     return new Promise((resolve, reject) => {
       // 처음부터 socket이 없으면 재시도
-      if (!socket) {
+      if (!socketStore.socket) {
         let retries = 0;
         const maxRetries = 30;
         const checkInterval = setInterval(() => {
-          const currentSocket = useSocketStore().socket;
+          const currentSocket = socketStore.socket;
           retries++;
           
           if (currentSocket && currentSocket.connected) {
@@ -28,7 +28,7 @@ export const useChatSocket = () => {
         return;
       }
 
-      if (socket.connected) {
+      if (socketStore.socket.connected) {
         resolve();
         return;
       }
@@ -38,7 +38,7 @@ export const useChatSocket = () => {
       const maxAttempts = 50; // 5초 (100ms * 50)
       const interval = setInterval(() => {
         attempts++;
-        if (socket.connected) {
+        if (socketStore.socket?.connected) {
           clearInterval(interval);
           resolve();
         } else if (attempts >= maxAttempts) {
@@ -112,9 +112,9 @@ export const useChatSocket = () => {
 
   /** 메시지 전송 */
   const sendMessageToRoom = (roomId: number, content: string, isfile = 0) => {
-    if (!socket) return;
+    if (!socketStore.socket) return;
 
-    socket.emit(
+    socketStore.socket?.emit(
       'sendMessage',
       { roomId, content, senderId: 0, isfile } as SendMessage
     );
@@ -122,9 +122,9 @@ export const useChatSocket = () => {
 
   /** 메시지 삭제 */
   const deleteMessageInRoom = (roomId: number, messageId: number, content: string) => {
-    if (!socket) return;
+    if (!socketStore.socket) return;
 
-    socket.emit(
+    socketStore.socket?.emit(
       'deleteMessage',
       { roomId, messageId, content } as DeleteMessage
     );
@@ -132,38 +132,83 @@ export const useChatSocket = () => {
 
   /** 이전 메시지 불러오기 */
   const loadMessages = (roomId: number, limit: number, lastId?: number) => {
-    if (!socket) return;
+    if (!socketStore.socket) return;
 
-    socket.emit('loadMessages', { roomId, limit, lastId });
+    socketStore.socket?.emit('loadMessages', { roomId, limit, lastId });
   };
 
   /** 이벤트 리스너 등록 */
   const onNewMessage = (callback: (res: socketResponse) => void) => {
-    socket?.on('newMessage', callback);
+    socketStore.socket?.on('newMessage', callback);
   };
 
   const onDeletedMessage = (callback: (res: socketResponse) => void) => {
-    socket?.on('deletedMessage', callback);
+    socketStore.socket?.on('deletedMessage', callback);
   };
 
   const onJoinedRoom = (callback: (roomId: number) => void) => {
-    socket?.on('joinedRoom', callback);
+    socketStore.socket?.on('joinedRoom', callback);
   };
 
   const onLoadMessages = (callback: (res: socketResponse) => void) => {
-    socket?.on('loadMessages', callback);
+    socketStore.socket?.on('loadMessages', callback);
+  };
+
+  const onFriendRequest = (callback: (res: socketResponse) => void) => {
+    socketStore.socket?.on('friendRequest', callback);
+  };
+
+  const offFriendRequest = (callback?: (res: socketResponse) => void) => {
+    if (callback) {
+      socketStore.socket?.off('friendRequest', callback);
+    } else {
+      socketStore.socket?.off('friendRequest');
+    }
+  };
+
+  const offLoadMessages = (callback?: (res: socketResponse) => void) => {
+    if (!socketStore.socket) return;
+
+    if (callback) {
+      socketStore.socket.off('loadMessages', callback);
+    } else {
+      socketStore.socket.off('loadMessages');
+    }
+  };
+  
+  const offNewMessage = (callback?: (res: socketResponse) => void) => {
+    if (!socketStore.socket) return;
+
+    if (callback) {
+      socketStore.socket.off('newMessage', callback);
+    } else {
+      socketStore.socket.off('newMessage');
+    }
+  };
+
+  const offDeletedMessage = (callback?: (res: socketResponse) => void) => {
+    if (!socketStore.socket) return;
+
+    if (callback) {
+      socketStore.socket.off('deleteMessage', callback);
+    } else {
+      socketStore.socket.off('deleteMessage');
+    }
   };
 
   /** 특정 방 나가기 */
   const leaveRoom = (roomId: number) => {
-    if (!socket) return;
+    if (!socketStore.socket) return;
 
-    socket.emit('leaveRoom', { roomId });
+    socketStore.socket?.emit('leaveRoom', { roomId });
     joinedRooms.value.delete(String(roomId));
   };
 
+  const onUpdateRoomList = (callback: (res: socketResponse) => void) => {
+    socketStore.socket?.on('newRoomList', callback);
+  };
+
   return {
-    socket,
     joinRoom,
     sendMessageToRoom,
     deleteMessageInRoom,
@@ -175,5 +220,11 @@ export const useChatSocket = () => {
     onLoadMessages,
     joinedRooms,
     waitForSocket,
+    onUpdateRoomList,
+    onFriendRequest,
+    offFriendRequest,
+    offLoadMessages,
+    offNewMessage,
+    offDeletedMessage
   };
 };

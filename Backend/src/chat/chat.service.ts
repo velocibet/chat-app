@@ -69,24 +69,52 @@ export class ChatService {
     //     );
     // }
     
-    async deleteMessage(messageId : number, roomId: number, content : string) {
+    async deleteMessage(messageId: number, roomId: number, content: string) {
+        const now = new Date();
+
         const { rows } = await pool.query(
-            'DELETE FROM messages WHERE id = $1 AND room_id = $2 AND content = $3 RETURNING id',
-            [messageId, roomId, content]
+            'UPDATE messages SET deleted_at = $4 WHERE id = $1 AND room_id = $2 AND content = $3 RETURNING id',
+            [messageId, roomId, content, now]
         );
 
         return rows[0];
     }
 
-    async loadMessages(roomId: string, limit: number, lastId?: number) {
-        const params = lastId ? [roomId, lastId, limit] : [roomId, limit];
+    async loadMessages(userId: number, roomId: string, limit: number, lastId?: number) {
         const query = lastId
-            ? `SELECT * FROM messages 
-            WHERE room_id = $1 AND id < $2 
-            ORDER BY created_at DESC LIMIT $3`
-            : `SELECT * FROM messages 
-            WHERE room_id = $1 
-            ORDER BY created_at DESC LIMIT $2`;
+            ? `
+            SELECT m.*
+            FROM messages m
+            WHERE m.room_id = $1
+                AND m.id < $2
+                AND m.deleted_at IS NULL
+                AND NOT EXISTS (
+                SELECT 1
+                FROM blocks b
+                WHERE b.blocker_id = $3
+                    AND b.blocked_id = m.sender_id
+                )
+            ORDER BY m.created_at DESC
+            LIMIT $4
+            `
+            : `
+            SELECT m.*
+            FROM messages m
+            WHERE m.room_id = $1
+                AND m.deleted_at IS NULL
+                AND NOT EXISTS (
+                SELECT 1
+                FROM blocks b
+                WHERE b.blocker_id = $2
+                    AND b.blocked_id = m.sender_id
+                )
+            ORDER BY m.created_at DESC
+            LIMIT $3
+            `;
+
+        const params = lastId
+            ? [roomId, lastId, userId, limit]
+            : [roomId, userId, limit];
 
         const { rows } = await pool.query(query, params);
         return rows.reverse();
@@ -130,5 +158,19 @@ export class ChatService {
         `, [filename, userId]);
 
         return rows && rows[0] ? !!rows[0].hasaccess || !!rows[0].hasAccess : false;
+    }
+
+    async isBlocked(blocker_id: number, blocked_id: number) {
+        const { rows } = await pool.query(`
+            SELECT EXISTS (
+            SELECT 1
+            FROM blocks
+            WHERE blocker_id = $1
+                AND blocked_id = $2
+            ) AS "isBlocked"
+            `, [blocker_id, blocked_id]
+        );
+
+        return rows[0].isBlocked;
     }
 }

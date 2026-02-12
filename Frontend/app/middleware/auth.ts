@@ -6,7 +6,9 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
   const frinedsStore = useFriendsStore();
 
   // 이미 사용자 데이터가 있으면 스킵
-  if (authStore.user && authStore.user.userId) {
+  if (authStore.user
+    && authStore.user.userId
+    && frinedsStore.friends) {
     return;
   }
 

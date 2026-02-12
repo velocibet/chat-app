@@ -1,12 +1,16 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Res } from '@nestjs/common';
 import type { Request, Response } from 'express';
+import { ChatGateway } from 'src/chat/ChatGateway';
 import { FriendsService } from './friends.service';
 import { FriendRequestDto, HandleFriendRequestDto } from './dto/friends.dto';
 import { User } from 'src/decorators/user.decorator';
 
 @Controller('friends')
 export class FriendsController {
-  constructor(private readonly friendsService: FriendsService) {}
+  constructor(
+    private readonly friendsService: FriendsService,
+    private readonly chatGateway: ChatGateway
+  ) {}
 
   @Get()
   async findAllFriends(
@@ -27,7 +31,7 @@ export class FriendsController {
     @User('username') username: string,
     @Body() body: FriendRequestDto
   ) {
-    return await this.friendsService.create(username, body);
+    return await this.friendsService.create(username, body, this.chatGateway);
   }
 
   @Patch('request/:username')
@@ -53,5 +57,20 @@ export class FriendsController {
     @User('username') username: string
   ){
     return await this.friendsService.getBlock(username, receiverUsername);
+  }
+
+  @Delete('block/:username')
+  async unblock(
+    @Param('username') receiverUsername: string,
+    @User('username') username: string
+  ){
+    return await this.friendsService.deleteBlock(username, receiverUsername);
+  }
+
+  @Get('blocks')
+  async findAllBlocks(
+    @User('userId') userId: number
+  ) {
+    return await this.friendsService.findAllBlocks(userId);
   }
 }

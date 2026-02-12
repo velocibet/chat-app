@@ -1,6 +1,7 @@
 import { UseGuards } from '@nestjs/common';
 import { OnGatewayInit, WebSocketServer, WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { ChatService } from './chat.service';
+import { ChatroomService } from 'src/chatroom/chatroom.service';
 import { Server, Socket } from 'socket.io';
 import { joinDirectRoom, sendMessage, previousMessage, deleteMessage } from './dto/chat.dto';
 import { RedisService } from 'src/redis/redis.service';
@@ -18,7 +19,8 @@ import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
     server: Server;
   constructor(
     private readonly chatService: ChatService,
-    private readonly redisService: RedisService
+    private readonly redisService: RedisService,
+    private readonly chatroomService: ChatroomService
   ) {}
 
   private connectedUsers = new Map<string, string>();
@@ -98,6 +100,28 @@ import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
     client.emit('joinDirectRoom', socketOk('입장 성공'));
   }
 
+  @SubscribeMessage('leaveRoom')
+  async handleLeavePrivateRoom(
+    @MessageBody() payload: joinDirectRoom,
+    @ConnectedSocket() client: Socket
+  ) {
+    const { userId } = client.request.session?.user;
+    const { roomId } = payload;
+
+    console.log(`User ${userId} leaving room ${roomId}`);
+
+    const isMember = await this.chatService.isRoomMember(userId, roomId);
+    if (!isMember) {
+      console.log(`User ${userId} not a member of room ${roomId}`);
+      client.emit('leaveRoom', socketFail('권한 없는 채팅방입니다.'));
+      return;
+    }
+
+    client.leave(`room:${roomId}`);
+    console.log(`User ${userId} successfully left room ${roomId}`);
+    client.emit('leaveRoom', socketOk('퇴장 성공'));
+  }
+
   @SubscribeMessage('sendMessage')
   async sendMessage(
     @MessageBody() payload : sendMessage,
@@ -107,7 +131,21 @@ import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
     const { roomId, content } = payload;
 
     const message = await this.chatService.sendMessage(userId, roomId, content);
-    this.server.to(`room:${roomId}`).emit('newMessage', socketOk('ok', message));
+    const room = await this.chatroomService.findOne(roomId, userId);
+
+    const blockedSocketIds: string[] = [];
+    for (const member of room.room_users) {
+      const isBlocked = await this.chatService.isBlocked(+member.user_id, +userId);
+      if (isBlocked) {
+        const socketId = this.connectedUsers.get(member.user_id);
+        if (socketId) blockedSocketIds.push(socketId);
+      }
+    }
+
+    this.server
+      .to(`room:${roomId}`)
+      .except(blockedSocketIds)
+      .emit('newMessage', socketOk('ok', message));
   }
 
   @SubscribeMessage('loadMessages')
@@ -115,8 +153,9 @@ import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
     @MessageBody() payload,
     @ConnectedSocket() client : Socket
   ) {
+    const userId = client.request.session?.user?.userId;
     const { roomId, limit, lastId } = payload;
-    const messages = await this.chatService.loadMessages(roomId, limit, lastId);
+    const messages = await this.chatService.loadMessages(userId, roomId, limit, lastId);
 
     client.emit('loadMessages', socketOk('ok', messages));
   }
@@ -142,5 +181,18 @@ import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
     const message = await this.chatService.deleteMessage(messageId, roomId, content);
 
     this.server.to(`room:${roomId}`).emit('deletedMessage', socketOk('ok', message));
+  }
+
+  /**
+   * 친구 요청 알림을 실시간으로 전송합니다.
+   * @param receiverId 받는 사람의 ID
+   * @param data 친구 요청 정보
+   */
+  sendFriendRequest(receiverId: number | string, data: any) {
+    this.server.to(`user:${receiverId}`).emit('friendRequest', socketOk('친구 요청을 받았습니다.', data));
+  }
+
+  updateRoomList(userId: number, data: any){
+    this.server.to(`user:${userId}`).emit("newRoomList", socketOk("ok", data));
   }
 }

@@ -18,7 +18,9 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService
+  ) {}
 
   @Post('email/send')
   async send(@Body() body) {
@@ -109,44 +111,54 @@ export class UsersController {
     @User('userId') userId: number, 
     @Body() body: UpdateDto
   ) {
-    const { username, nickname } = body;
+    const { username, nickname, bio } = body;
 
-    if (!file) throw new BadRequestException('파일을 업로드해주세요.');
-    if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지만 가능합니다.');
-
-    const timestamp = Date.now();
-    const fileName = `${userId}_${timestamp}.webp`;
+    if (file) {
+      if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지만 가능합니다.');
+    }
 
     try {
-      const currentUser = await this.usersService.findOneById(userId);
-      const oldFileName = currentUser.profileUrlName;
+      if (file) {
+        const timestamp = Date.now();
+        const fileName = `${userId}_${timestamp}.webp`;
 
-      const processedImage = await sharp(file.buffer)
-        .resize(300, 300, { fit: 'cover' })
-        .webp({ quality: 80 })
-        .toBuffer();
+        const currentUser = await this.usersService.findOneById(userId);
+        const oldFileName = currentUser.profileUrlName;
 
-      await s3.send(new PutObjectCommand({
-          Bucket: process.env.R2_BUCKET_PROFILES,
-          Key: fileName,
-          Body: processedImage,
-          ContentType: 'image/webp',
-      }));
+        const processedImage = await sharp(file.buffer)
+          .resize(300, 300, { fit: 'cover' })
+          .webp({ quality: 80 })
+          .toBuffer();
 
-      const userData = await this.usersService.updateProfile(userId, username, nickname, fileName);
-
-      if (oldFileName) {
-        try {
-          await s3.send(new DeleteObjectCommand({
+        await s3.send(new PutObjectCommand({
             Bucket: process.env.R2_BUCKET_PROFILES,
-            Key: oldFileName,
-          }));
-        } catch (err) {
-          console.error("-----[기존 파일 삭제 실패]-----");
-          console.error(err);
-          console.error("----------------------------");
+            Key: fileName,
+            Body: processedImage,
+            ContentType: 'image/webp',
+        }));
+
+        if (oldFileName) {
+          try {
+            await s3.send(new DeleteObjectCommand({
+              Bucket: process.env.R2_BUCKET_PROFILES,
+              Key: oldFileName,
+            }));
+          } catch (err) {
+            console.error("-----[기존 파일 삭제 실패]-----");
+            console.error(err);
+            console.error("----------------------------");
+          }
         }
+
+        const userData = await this.usersService.updateProfile(userId, username, nickname, bio, fileName);
+        
+        return {
+          message: "프로필이 성공적으로 업데이트 되었습니다.",
+          data: userData
+        };
       }
+
+      const userData = await this.usersService.updateProfile(userId, username, nickname, bio);
 
       return {
         message: "프로필이 성공적으로 업데이트 되었습니다.",

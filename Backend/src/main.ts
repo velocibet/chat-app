@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 
 import {TransformInterceptor} from './transform.interceptor'
 import {HttpExceptionFilter} from './http-exception.filter'
+import { ThrottlerExceptionFilter } from './throttler-exception.filter';
 
 import * as express from 'express';
 import * as dotenv from 'dotenv';
@@ -39,7 +40,7 @@ async function bootstrap() {
   });
 
   app.setGlobalPrefix('api');
-  
+  app.useGlobalFilters(new ThrottlerExceptionFilter());
   app.useGlobalPipes(new ValidationPipe(
     {
       whitelist: true,

@@ -14,6 +14,7 @@ const profileImage = useProfileImage();
 const userId = ref<number | undefined>(auth.user?.userId);
 const username = ref<string | undefined>(auth.user?.username);
 const nickname = ref<string | undefined>(auth.user?.nickname);
+const bio = ref<string | undefined>(auth.user?.bio);
 const file = ref<File>();
 
 const avatarUrl = ref<string>(profileImage.getUrl(auth.user?.profileUrlName));
@@ -63,15 +64,11 @@ async function submit() {
     return;
   }
 
-  if (!file.value) {
-    alert("파일을 추가하세요.")
-    return
-  }
-
   const formData = new FormData();
   formData.append('username', username.value);
   formData.append('nickname', nickname.value);
-  formData.append('file', file.value);
+  if (bio.value) formData.append('bio', bio.value);
+  if (file.value) formData.append('file', file.value);
 
   const res: ApiResponse = await userApi.updateProfile(formData);
   
@@ -104,6 +101,7 @@ onUnmounted(() => {
             <span class="avatar-overlay">변경</span>
           </label>
           <input v-model="nickname" type="text" placeholder="사용자 이름" class="primary-input" />
+          <input v-model="bio" type="text" placeholder="자기소개" class="primary-input" />
         </div>
         
         <input type="file" id="avatarInput" name="file" accept="image/*" hidden @change="handleFileChange" />

@@ -6,10 +6,12 @@ definePageMeta({
   middleware: ["auth"],
 });
 
+const router = useRouter();
 const route = useRoute();
 
 const chatroomApi = useChatroomApi();
 const roomImage = useRoomImage();
+const authStore = useAuthStore();
 
 const roomId = route.params.roomId as string;
 const { data: chatRoomData } = await useAsyncData<ApiResponse<ChatroomListItem>>('chatroom', () => chatroomApi.getRoom(+roomId));

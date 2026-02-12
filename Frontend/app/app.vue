@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import 'normalize.css';
+
 const route = useRoute();
 const { connect, disconnect, socket } = useSocket();
 
