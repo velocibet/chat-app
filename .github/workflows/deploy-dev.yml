@@ -50,3 +50,4 @@ jobs:
         run: |
           rsync -avz --rsync-path="mkdir -p /var/www/chat-app-dev/Frontend && rsync" ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Frontend/
           ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "cd /var/www/chat-app-dev/Frontend && npm install && npm run build && pm2 restart index-dev || pm2 start .output/server/index.mjs --name index-dev"
+
