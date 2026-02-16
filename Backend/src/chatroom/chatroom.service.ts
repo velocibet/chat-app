@@ -8,6 +8,7 @@ export class ChatroomService {
         @Inject(forwardRef(() => ChatGateway))
         private readonly ChatGateway: ChatGateway
     ) {}
+
     async create(type: string, userId: number, member?: number, membersArray?: number[], title?: string) {
         const client = await pool.connect();
 
@@ -25,13 +26,20 @@ export class ChatroomService {
                     WITH upsert_room AS (
                     INSERT INTO room (type, dm_hash)
                     VALUES ('dm', $1)
-                    ON CONFLICT (dm_hash) DO UPDATE SET dm_hash = EXCLUDED.dm_hash
+                    ON CONFLICT (dm_hash)
+                    DO UPDATE SET dm_hash = EXCLUDED.dm_hash
                     RETURNING id
                     ),
-                    insert_members AS (
-                    INSERT INTO room_user (room_id, user_id, role)
-                    SELECT id, unnest(ARRAY[$2::int, $3::int]), 'member'::room_user_role FROM upsert_room
-                    ON CONFLICT DO NOTHING
+                    upsert_members AS (
+                    INSERT INTO room_user (room_id, user_id, role, hidden)
+                    SELECT
+                        id,
+                        unnest(ARRAY[$2::int, $3::int]),
+                        'member'::room_user_role,
+                        true
+                    FROM upsert_room
+                    ON CONFLICT (room_id, user_id)
+                    DO UPDATE SET hidden = false, deleted_at = NULL
                     )
                     SELECT id FROM upsert_room;
                 `, [roomName, userId, member]);
@@ -50,11 +58,15 @@ export class ChatroomService {
                     VALUES ('group', $1, $2)
                     RETURNING id
                     )
-                    INSERT INTO room_user (room_id, user_id, role)
+                    INSERT INTO room_user (room_id, user_id, role, hidden)
                     SELECT 
                     new_room.id, 
                     m.user_id, 
-                    CASE WHEN m.user_id = $1 THEN 'owner'::room_user_role ELSE 'member'::room_user_role END
+                    CASE 
+                        WHEN m.user_id = $1 THEN 'owner'::room_user_role 
+                        ELSE 'member'::room_user_role 
+                    END,
+                    false
                     FROM new_room, unnest($3::int[]) AS m(user_id)
                     RETURNING (SELECT id FROM new_room);
                 `, [userId, title || '그룹 채팅방', allMembers]);
@@ -66,7 +78,19 @@ export class ChatroomService {
             }
 
             await client.query('COMMIT');
-            this.ChatGateway.updateRoomList(userId);
+            
+            const membersRes = await client.query(`
+            SELECT user_id
+            FROM room_user
+            WHERE room_id = $1
+                AND deleted_at IS NULL
+            `, [roomId]);
+
+            const memberIds = membersRes.rows.map(r => r.user_id);
+
+            for (const uid of memberIds) {
+                this.ChatGateway.updateRoomList(uid);
+            }
 
             return {
                 message: "성공적으로 채팅방을 생성했습니다.",
@@ -112,7 +136,8 @@ export class ChatroomService {
                 SELECT room_id
                 FROM room_user
                 WHERE user_id = $1
-                    AND deleted_at IS NULL
+                AND deleted_at IS NULL
+                AND hidden = false
             )
             GROUP BY r.id;
         `, [userId]);
@@ -121,9 +146,9 @@ export class ChatroomService {
     }
 
     async findOne(roomId: number, userId: number) {
-        const { rows } = await pool.query(
-            `
-            SELECT r.id,
+        const { rows } = await pool.query(`
+            SELECT 
+                r.id,
                 r.type,
                 r.title,
                 r.owner_user_id,
@@ -154,11 +179,10 @@ export class ChatroomService {
                 WHERE room_id = r.id 
                     AND user_id = $2
                     AND deleted_at IS NULL
+                    AND hidden = false
             )
             GROUP BY r.id;
-            `,
-            [roomId, userId]
-        );
+        `, [roomId, userId]);
 
         if (!rows || rows.length === 0) {
             throw new ForbiddenException('해당 채팅방에 접근 권한이 없습니다.');
@@ -166,6 +190,8 @@ export class ChatroomService {
 
         return rows[0];
     }
+
+
 
     async checkImageUser(filename: string, userId: number) {
         const { rowCount } = await pool.query(`
@@ -187,41 +213,66 @@ export class ChatroomService {
         `, [fileName, roomId, title]);
     }
 
-    async leave(userId: number, roomId: number, gateway: any) {
+    async leave(userId: number, roomId: number) {
         const client = await pool.connect();
 
         try {
             await client.query('BEGIN');
 
-            const { rowCount } = await client.query(`
-                SELECT 1
+            const roomRes = await client.query(`
+                SELECT type, owner_user_id
                 FROM room
-                WHERE id = $1 AND owner_user_id = $2
-            `, [roomId, userId]);
+                WHERE id = $1 AND deleted_at IS NULL
+                `, [roomId]);
 
+            if (roomRes.rowCount === 0) {
+                throw new BadRequestException("존재하지 않는 방입니다.");
+            }
+
+            const { type, owner_user_id } = roomRes.rows[0];
             const now = new Date();
 
-            if (rowCount > 0) {
+            if (type === 'dm') {
                 await client.query(`
+                    UPDATE room_user
+                    SET hidden = true
+                    WHERE room_id = $1 
+                    AND user_id = $2
+                    AND deleted_at IS NULL
+                `, [roomId, userId]);
+            } else {
+                if (owner_user_id === userId) {
+                    await client.query(`
                     UPDATE room
                     SET deleted_at = $2
                     WHERE id = $1
-                `, [roomId, now]);
+                    `, [roomId, now]);
 
-                await client.query(`
+                    await client.query(`
                     UPDATE room_user
                     SET deleted_at = $2
                     WHERE room_id = $1
-                `, [roomId, now]);
-            } else {
-                await client.query(`
+                    `, [roomId, now]);
+                } else {
+                    await client.query(`
                     UPDATE room_user
                     SET deleted_at = $3
                     WHERE room_id = $1 AND user_id = $2
-                `, [roomId, userId, now]);
+                    `, [roomId, userId, now]);
+                }
             }
 
-            gateway.updateRoomList(userId);
+            const membersRes = await client.query(`
+            SELECT user_id
+            FROM room_user
+            WHERE room_id = $1
+            `, [roomId]);
+
+            const memberIds = membersRes.rows.map(r => r.user_id);
+
+            for (const uid of memberIds) {
+                this.ChatGateway.updateRoomList(uid);
+            }
 
             await client.query('COMMIT');
         } catch (error) {
@@ -230,7 +281,7 @@ export class ChatroomService {
         } finally {
             client.release();
         }
-    }
+        }
 
     async isOwner(userId: number, roomId: number) {
         const { rowCount } = await pool.query(`
@@ -250,7 +301,7 @@ export class ChatroomService {
             SELECT $1, $3
             WHERE EXISTS (
                 SELECT 1
-                FROM rooms
+                FROM room
                 WHERE id = $1
                 AND owner_user_id = $2
             )

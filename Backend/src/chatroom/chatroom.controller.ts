@@ -128,7 +128,7 @@ export class ChatroomController {
         @Param('id', ParseIntPipe) roomId: number,
         @User('userId') userId: number,
     ) {
-        return await this.ChatroomService.leave(userId, roomId, this.ChatGateway);
+        return await this.ChatroomService.leave(userId, roomId);
     }
 
     @Post('room/:id/invite')

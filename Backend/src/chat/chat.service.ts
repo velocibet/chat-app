@@ -177,45 +177,38 @@ export class ChatService {
     async findRooms(userId: number) {
         const { rows } = await pool.query(`
             SELECT 
-            r.id,
-            r.type,
-            r.title,
-            r.owner_user_id,
-            r.dm_hash,
-            r.created_at,
-            r.room_image_url,
-            COALESCE(
+                r.id,
+                r.type,
+                r.title,
+                r.owner_user_id,
+                r.dm_hash,
+                r.created_at,
+                r.room_image_url,
                 json_agg(
-                json_build_object(
-                    'id', ru.id,
-                    'room_id', r.id,
-                    'user_id', u.id,
-                    'username', u.username,
-                    'nickname', u.nickname,
-                    'profileUrlName', u.profile_url_name,
-                    'role', ru.role,
-                    'joined_at', ru.joined_at,
-                    'left_at', ru.left_at
-                )
-                ),
-                '[]'::json
-            ) AS room_users
+                    json_build_object(
+                        'id', ru.id,
+                        'room_id', r.id,
+                        'user_id', u.id,
+                        'username', u.username,
+                        'nickname', u.nickname,
+                        'profileUrlName', u.profile_url_name,
+                        'role', ru.role,
+                        'joined_at', ru.joined_at,
+                        'left_at', ru.left_at
+                    )
+                ) AS room_users
             FROM room r
-            JOIN room_user ru 
-            ON ru.room_id = r.id 
-            AND ru.deleted_at IS NULL
-            AND ru.left_at IS NULL
+            JOIN room_user ru ON ru.room_id = r.id AND ru.deleted_at IS NULL
             JOIN users u ON u.id = ru.user_id
             WHERE r.deleted_at IS NULL
             AND r.id IN (
-            SELECT room_id
-            FROM room_user
-            WHERE user_id = $1
+                SELECT room_id
+                FROM room_user
+                WHERE user_id = $1
                 AND deleted_at IS NULL
-                AND left_at IS NULL
+                AND hidden = false
             )
             GROUP BY r.id;
-
         `, [userId]);
 
         return rows;
