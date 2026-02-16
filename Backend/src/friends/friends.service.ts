@@ -140,7 +140,8 @@ export class FriendsService {
       `SELECT
         u.id AS "userId",
         u.username,
-        u.nickname
+        u.nickname,
+        u.profile_url_name AS "profileUrlName"
       FROM users u
       JOIN friend_requests fr ON (
         (fr.sender_id = $1 AND u.id = fr.receiver_id) OR 

@@ -20,7 +20,7 @@ defineExpose({
     </div>
     <div v-else v-for="(item, index) in friends" :key="index" class="friend-item" @click="emit('select', item.userId)">
       <div class="user-avatar">
-        <img :src="profileImage.getUrl(null)" />
+        <img :src="profileImage.getUrl(item.profileUrlName)" />
       </div>
       <div>
         <h5> {{ item.nickname }} </h5>

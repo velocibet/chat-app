@@ -13,14 +13,15 @@ const roomImage = useRoomImage();
 const authStore = useAuthStore();
 const friendsStore = useFriendsStore();
 
-const rooms = reactive<ChatroomListItem[]>([]);
+const rooms = ref<ChatroomListItem[]>([]);
 const openedMenuId = ref<number | null>(null);
 const showRoomPopup = ref(false);
 const popupRef = ref<InstanceType<typeof RoomPopup> | null>(null);
+const dropdownStyle = ref({});
 
 const { data: roomsData } = await useAsyncData<ApiResponse<ChatroomListItem[]>>('rooms', () => chatRoomApi.getRooms());
 if (roomsData.value?.data) {
-  rooms.push(...roomsData.value.data);
+  rooms.value.push(...roomsData.value.data);
 }
 
 function toggleRoomPopup() {
@@ -65,12 +66,20 @@ const goToSettings = () => router.push({
   }
 });
 
-function toggleMenu(roomId: number) {
-  openedMenuId.value = openedMenuId.value === roomId ? null : roomId;
-}
-
 function closeMenu() {
   openedMenuId.value = null;
+}
+
+function toggleMenu(roomId: number, event: MouseEvent) {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+
+  dropdownStyle.value = {
+    position: 'fixed',
+    top: rect.top + 'px',
+    left: rect.right + 'px',
+  };
+
+  openedMenuId.value = openedMenuId.value === roomId ? null : roomId;
 }
 
 onMounted(async () => {
@@ -80,10 +89,11 @@ onMounted(async () => {
 
   await connect();
   chatSocket.onUpdateRoomList((res: socketResponse) => {
+    console.log(res);
     if (!res.success) return
     
     const roomData = res.data;
-    rooms.values = roomData;
+    rooms.value = roomData;
   })
 
   document.addEventListener('click', handleClickOutside);
@@ -114,27 +124,32 @@ onUnmounted(() => {
               <div v-else-if="item.type === 'group'" class="user-name">{{ item.title }}</div>
               <div class="user-last">대화 시작하기</div>
             </div>
-            <p class="more-btn" @click.stop="toggleMenu(item.id)">
+            <p class="more-btn" @click.stop="toggleMenu(item.id, $event)">
               ︙
             </p>
-            <div
-              v-if="openedMenuId === item.id"
-              class="dropdown"
-              @click.stop
-            >
-              <div class="danger">
-                <p
-                  v-if="item.owner_user_id == authStore.user?.userId"
-                  @click="checkMiddleware(item.id, '채팅방을 삭제하시겠습니까?')">
-                  채팅방 삭제하기
-                </p>
-                <p
-                  v-else
-                  @click="checkMiddleware(item.id, '채팅방을 나가시겠습니까?')">
-                  채팅방 나가기
-                </p>
-              </div>
-            </div>
+            <Teleport to="body">
+              <ul
+                v-if="openedMenuId === item.id"
+                class="dropdown-menu"
+                :style="dropdownStyle"
+                @click.stop
+              >
+                  <li>
+                    <button
+                      v-if="Number(item.owner_user_id) === authStore.user?.userId"
+                      @click="checkMiddleware(item.id, '채팅방을 삭제하시겠습니까?')">
+                      채팅방 삭제하기
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      v-if="Number(item.owner_user_id) !== authStore.user?.userId"
+                      @click="checkMiddleware(item.id, '채팅방을 나가시겠습니까?')">
+                      채팅방 나가기
+                    </button>
+                  </li>
+              </ul>
+            </Teleport>
             <!-- <div v-show="isNewMessage[item.id]" class="user-alarm">
               {{ alarmStore.alarms[item.id] }}
             </div> -->

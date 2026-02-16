@@ -307,10 +307,14 @@ onUnmounted(() => {
             <h4>{{ targetRoom?.room_users.find((u: RoomUserRow) => u.user_id === item.sender_id)?.nickname ?? '알수 없는 사용자' }}</h4>
             <span>{{ formatKoreanTime(item.created_at) }}</span>
             <p @click.stop="toggleMenu(item.id)">︙</p>
-            <div v-if="openMenuId === item.id" class="message-menu" >
-              <button v-if="item.sender_id === authStore.user?.userId" @click="deleteMessage(item)">삭제</button>
-              <button v-else @click="reportMessage">신고</button>
-            </div>
+            <ul v-if="openMenuId === item.id" class="dropdown-menu">
+              <li v-if="item.sender_id === authStore.user?.userId">
+                <button @click="deleteMessage(item)">삭제</button>
+              </li>
+              <li v-else>
+                <button @click="reportMessage">신고</button>
+              </li>
+            </ul>
           </div>
           <div v-if="item.isfile === 1">
             <img :src="getImageUrl(item)" class="chat-image" />

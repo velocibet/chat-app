@@ -54,6 +54,7 @@
 
 .user-item {
   display: flex;
+  position: relative;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -236,20 +237,19 @@
 }
 
 .user-popup {
-  display: flex;
-  flex-direction: column;
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  z-index: 1001;
   width: 400px;
   max-width: 90%;
   background-color: #2e2e2e;
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  animation: scaleIn 0.25s ease-out forwards;
 }
+
 
 .user-popup .user-info {
   display: flex;
@@ -283,8 +283,7 @@
   width: 100%;
 }
 
-
-.user-popup .user-info .choice {
+.choice {
   display: flex;
   justify-content: center;
   gap: 6px;
@@ -300,7 +299,7 @@
   color: #888;
 }
 
-.dropdown-button {
+/* .dropdown-button {
   position: absolute;
   top: 10px;
   right: 10px;
@@ -338,7 +337,7 @@
 
 .dropdown-menu li button:hover {
   background-color: #555;
-}
+} */
 
 .add-room {
   position: absolute;

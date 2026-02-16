@@ -192,7 +192,9 @@ import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
     this.server.to(`user:${receiverId}`).emit('friendRequest', socketOk('친구 요청을 받았습니다.', data));
   }
 
-  updateRoomList(userId: number, data: any){
+  async updateRoomList(userId: number){
+    const data = await this.chatService.findRooms(userId);
+    
     this.server.to(`user:${userId}`).emit("newRoomList", socketOk("ok", data));
   }
 }

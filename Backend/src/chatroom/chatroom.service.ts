@@ -1,8 +1,13 @@
-import { Injectable, HttpException, InternalServerErrorException, ForbiddenException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, HttpException, InternalServerErrorException, ForbiddenException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { ChatGateway } from 'src/chat/ChatGateway';
 import { pool } from '../database';
 
 @Injectable()
 export class ChatroomService {
+    constructor(
+        @Inject(forwardRef(() => ChatGateway))
+        private readonly ChatGateway: ChatGateway
+    ) {}
     async create(type: string, userId: number, member?: number, membersArray?: number[], title?: string) {
         const client = await pool.connect();
 
@@ -61,6 +66,7 @@ export class ChatroomService {
             }
 
             await client.query('COMMIT');
+            this.ChatGateway.updateRoomList(userId);
 
             return {
                 message: "성공적으로 채팅방을 생성했습니다.",
@@ -215,8 +221,7 @@ export class ChatroomService {
                 `, [roomId, userId, now]);
             }
 
-            const result = await this.findAll(userId);
-            gateway.updateRoomList(userId, result);
+            gateway.updateRoomList(userId);
 
             await client.query('COMMIT');
         } catch (error) {

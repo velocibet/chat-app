@@ -10,6 +10,7 @@ export interface Friend {
   userId: number;
   username: string;
   nickname: string;
+  profileUrlName?: string;
 }
 
 export interface Block {

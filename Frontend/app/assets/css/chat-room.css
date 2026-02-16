@@ -97,7 +97,7 @@
   user-select: none;
 }
 
-.message-menu {
+/* .message-menu {
   position: absolute;
   top: 0;
   left: 100%;
@@ -123,7 +123,7 @@
 
 .message-menu button:hover {
   background: #f5f5f5;
-}
+} */
 
 .chat-container form {
   display: flex;

@@ -92,35 +92,37 @@ onUnmounted(() => {
 </script>
 
 <template>
-    <div class="user-popup" ref="popupRef">
-        <div v-if="userInfo" class="user-info">
-            <button @click="isOpen = !isOpen" class="dropdown-button">
-                ︙
-            </button>
-            <ul v-if="isOpen" class="dropdown-menu">
-                <li v-for="item in menuItems" :key="item.label">
-                    <button @click="item.action(); isOpen = false">
-                        {{ item.label }}
-                    </button>
-                </li>
-            </ul>
-            <div class="title">
-                <img :src="profileImage.getUrl(userInfo?.profileUrlName)"/>
-                <div class="description">
-                    <h4>{{ userInfo?.nickname }}</h4>
-                    <span>{{ userInfo?.username }}</span>
+    <div class="popup-overlay">
+        <div class="user-popup" ref="popupRef">
+            <div v-if="userInfo" class="user-info">
+                <button @click="isOpen = !isOpen" class="dropdown-button">
+                    ︙
+                </button>
+                <ul v-if="isOpen" class="dropdown-menu">
+                    <li v-for="item in menuItems" :key="item.label">
+                        <button @click="item.action(); isOpen = false">
+                            {{ item.label }}
+                        </button>
+                    </li>
+                </ul>
+                <div class="title">
+                    <img :src="profileImage.getUrl(userInfo?.profileUrlName)"/>
+                    <div class="description">
+                        <h4>{{ userInfo?.nickname }}</h4>
+                        <span>{{ userInfo?.username }}</span>
+                    </div>
                 </div>
+                <div class="choice">
+                    <button class="primary-button" @click="getChat">채팅</button>
+                    <button class="primary-button" @click="getFriend">친구 추가</button>
+                </div>
+                <span v-if="userInfo?.bio" class="bio">{{ userInfo?.bio }}</span>
+                <span v-else class="no-bio">자기소개가 없습니다.</span>
             </div>
-            <div class="choice">
-                <button class="primary-button" @click="getChat">채팅</button>
-                <button class="primary-button" @click="getFriend">친구 추가</button>
+            <div v-else>
+                <div class="spinner"></div>
+                <p>유저 정보를 불러오고 있습니다.</p>
             </div>
-            <span v-if="userInfo?.bio" class="bio">{{ userInfo?.bio }}</span>
-            <span v-else class="no-bio">자기소개가 없습니다.</span>
-        </div>
-        <div v-else>
-            <div class="spinner"></div>
-            <p>유저 정보를 불러오고 있습니다.</p>
         </div>
     </div>
 </template>
