@@ -19,15 +19,14 @@ onMounted(async () => {
     return;
   }
 
-  try {
-    await userApi.verifyEmailToken(token);
-    status.value = 'success';
-  } catch (err: any) {
+  const res = await userApi.verifyEmailToken(token);
+  if (res.success) status.value = 'success';
+  if (!res.success) {
     status.value = 'error';
-    errorMessage.value =
-      err?.response?.data?.message ??
-      '이미 사용되었거나 만료된 인증 링크입니다.';
-  }
+    errorMessage.value = res.message;
+  };
+
+
 });
 
 const goHome = () => {
