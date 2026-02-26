@@ -3,11 +3,11 @@ import '~/assets/css/chat-layout.css';
 import type { Block } from '~/types/friends';
 
 const friendsApi = useFriendsApi();
+const profileImage = useProfileImage();
 const emit = defineEmits<{
   (e: 'close'): void;
 }>();
 
-const popupRef = ref<HTMLElement | null>(null); // 최상위 div ref
 const blockList = ref<Block[]>([]);
 
 async function getBlockedUser() {
@@ -20,44 +20,58 @@ async function unblockUser(username: string) {
   if (!check) return;
 
   const res = await friendsApi.unblockUser(username);
-  alert(res.message);
-}
-
-// 최상위 div 외부 클릭 감지
-const handleClickOutside = (event: MouseEvent) => {
-  if (popupRef.value && !popupRef.value.contains(event.target as Node)) {
-    emit('close');
+  if (res.success) {
+      alert(res.message);
+      await getBlockedUser();
   }
 }
 
 onMounted(async () => {
   await getBlockedUser();
-  document.addEventListener('click', handleClickOutside);
-});
-
-onUnmounted(() => {
-  document.removeEventListener('click', handleClickOutside);
 });
 </script>
 
 <template>
-  <div class="room-popup" ref="popupRef">
-    <header>
-      <h3>차단 목록</h3>
-    </header>
-    <main>
-      <div v-if="blockList.length === 0" class="empty-list">
-        <p>차단한 유저가 없습니다.</p>
-      </div>
-      <div v-else v-for="user in blockList" :key="user.username" class="list">
-        <div class="title">
-          <p>{{ user.nickname }}</p>
-          <span>{{ user.username }}</span>
+  <div class="popup-overlay" @click.self="$emit('close')">
+    <div class="user-popup block-list-modal" ref="popupRef">
+      <div class="user-info modal-header">
+        <div class="me">
+          <p class="name">차단 목록 관리</p>
         </div>
-        <button @click="unblockUser(user.username)">
-          차단 해제하기
-        </button>
       </div>
-    </main>
+
+      <main class="modal-body scroll-area">
+        <div v-if="blockList.length === 0" class="no-bio empty-message">
+          <p>차단한 유저가 없습니다.</p>
+        </div>
+        
+        <div v-else class="invite-list">
+          <div 
+            v-for="user in blockList"
+            class="user-item block-item"
+          >
+            <div class="user-avatar small">
+              <img :src="profileImage.getUrl(user.profileUrlName)" />
+            </div>
+            
+            <div class="user-meta">
+              <span class="user-name">{{ user.nickname }}</span>
+              <span class="user-last">@{{ user.username }}</span>
+            </div>
+
+            <button 
+              class="primary-button unblock-btn" 
+              @click="unblockUser(user.username)"
+            >
+              해제
+            </button>
+          </div>
+        </div>
+      </main>
+
+      <div class="choice modal-footer">
+        <button class="primary-button cancel-btn" @click="$emit('close')">닫기</button>
+      </div>
+    </div>
   </div>
 </template>

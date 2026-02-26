@@ -24,6 +24,7 @@ export interface User {
   nickname: string;
   bio: string;
   profileUrlName?: string;
+  isOnline?: boolean;
 }
 
 export interface LoginReponse {

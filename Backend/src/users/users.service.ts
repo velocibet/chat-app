@@ -4,6 +4,7 @@ import { pool } from '../database';
 import { NotFound } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import { RegisterDto, LoginDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
+import { ChatService } from 'src/chat/chat.service';
 
 interface LoginLog {
   username: string;
@@ -14,6 +15,10 @@ interface LoginLog {
 
 @Injectable()
 export class UsersService {
+  constructor(
+    private readonly chatService: ChatService,
+  ) {}
+  
   async createToken(email: string) {
     const token = crypto.randomBytes(32).toString('hex');
     const tokenHash = crypto
@@ -303,14 +308,19 @@ export class UsersService {
       [userId]
     );
 
+    if (!rows[0]) return null;
+
     const user = rows[0];
+    const [status] = await this.chatService.getUsersStatus([userId]);
+
     const data = {
       userId: user.id,
       username: user.username,
       nickname: user.nickname,
       bio: user.bio,
-      profileUrlName: user.profile_url_name
-    }
+      profileUrlName: user.profile_url_name,
+      isOnline: status ? status.isOnline : false
+    };
 
     return data;
   }

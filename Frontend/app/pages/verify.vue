@@ -26,7 +26,6 @@ onMounted(async () => {
     errorMessage.value = res.message;
   };
 
-
 });
 
 const goHome = () => {

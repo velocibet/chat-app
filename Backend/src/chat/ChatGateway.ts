@@ -8,6 +8,7 @@ import { RedisService } from 'src/redis/redis.service';
 import { sessionMiddleware } from '../main';
 import { socketOk, socketFail } from '../socket.response';
 import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
+import { FriendsService } from 'src/friends/friends.service';
 
 @UseGuards(AuthWsGuard)
 @WebSocketGateway({ cors: {
@@ -20,7 +21,8 @@ import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
   constructor(
     private readonly chatService: ChatService,
     private readonly redisService: RedisService,
-    private readonly chatroomService: ChatroomService
+    private readonly chatroomService: ChatroomService,
+    private readonly friendsService: FriendsService
   ) {}
 
   private connectedUsers = new Map<string, string>();
@@ -45,37 +47,53 @@ import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
       return
     }
     
+    await this.chatService.setUserOnline(userId.toString());
     this.connectedUsers.set(userId, socket.id);
     socket.join(`user:${userId}`);
+
+    const friends = await this.friendsService.findAll(userId); 
+
+    friends.forEach(friend => {
+      this.server.to(`user:${friend.userId}`).emit('user_status_changed', {
+        userId: Number(userId),
+        isOnline: true
+      });
+    });
+
     console.log(`User ${userId} online`);
   }
 
   async handleDisconnect(socket: Socket) {
     const userId = socket.request.session?.user?.userId;
     
-    this.connectedUsers.delete(userId);
+    const friends = await this.friendsService.findAll(userId);
+    
+    friends.forEach(friend => {
+      this.server.to(`user:${friend.userId}`).emit('user_status_changed', {
+        userId: Number(userId),
+        isOnline: false
+      });
+    });
+
+    this.connectedUsers.delete(userId.toString());
     console.log(`User ${userId} disconnect`);
   }
 
-  // @SubscribeMessage('heartbeat')
-  // async heartbeat(@ConnectedSocket() socket: Socket) {
-  //   const userId = socket.handshake.query.userId as string;
-  //   if (!userId) return;
+  @SubscribeMessage('heartbeat')
+  async heartbeat(@ConnectedSocket() socket: Socket) {
+    const userId = socket.request.session?.user?.userId;
+    if (!userId) return;
 
-  //   await this.chatService.setUserOnline(userId);
-  // }
-
+    await this.chatService.setUserOnline(userId);
+  }
 
   // @SubscribeMessage('checkOnline')
-  // async checkOnline(
-  //   @MessageBody() body: { userId: number },
-  //   @ConnectedSocket() client: Socket
+  // async handleGetStatus(
+  //   @ConnectedSocket() socket: Socket,
+  //   @MessageBody() data: { userIds: number[] }
   // ) {
-  //   const online = await this.chatService.isOnline(body.userId);
-  //   client.emit('onlineStatus', {
-  //     userId: body.userId,
-  //     online,
-  //   });
+  //   const statuses = await this.chatService.getUsersStatus(data.userIds);
+  //   return statuses;
   // }
   
   @SubscribeMessage('joinDirectRoom')

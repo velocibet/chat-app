@@ -11,6 +11,7 @@ export interface Friend {
   username: string;
   nickname: string;
   profileUrlName?: string;
+  isOnline?: boolean;
 }
 
 export interface Block {
@@ -20,4 +21,5 @@ export interface Block {
   created_at: Date;
   username: string;
   nickname: string;
+  profileUrlName: string | null;
 }

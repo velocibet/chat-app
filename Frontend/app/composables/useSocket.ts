@@ -1,21 +1,19 @@
-import { io, Socket } from 'socket.io-client';
-import { useSocketStore } from '~/stores/socket';
+import { Socket, io } from "socket.io-client";
+import { ref, computed } from "vue";
+
+const connectingPromise = ref<Promise<void> | null>(null);
 
 export const useSocket = () => {
   const socketStore = useSocketStore();
 
   const connect = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      if (socketStore.socket?.connected) {
-        resolve();
-        return;
-      }
+    if (!import.meta.client) return Promise.resolve();
 
-      if (!import.meta.client) {
-        reject(new Error('Client-side only'));
-        return;
-      }
+    if (socketStore.socket?.connected) return Promise.resolve();
 
+    if (connectingPromise.value) return connectingPromise.value;
+
+    connectingPromise.value = new Promise((resolve, reject) => {
       const config = useRuntimeConfig();
 
       const s = io(config.public.wsBase, {
@@ -27,15 +25,15 @@ export const useSocket = () => {
       socketStore.setSocket(s as unknown as Socket);
 
       const onConnect = () => {
-        console.log('Connected to Socket Server ✅');
         socketStore.setConnected(true);
+        connectingPromise.value = null;
         s.off('connect', onConnect);
         s.off('connect_error', onError);
         resolve();
       };
 
       const onError = (error: any) => {
-        console.error('Socket connection error:', error);
+        connectingPromise.value = null;
         s.off('connect', onConnect);
         s.off('connect_error', onError);
         reject(error);
@@ -44,25 +42,22 @@ export const useSocket = () => {
       s.on('connect', onConnect);
       s.on('connect_error', onError);
 
-      s.on('disconnect', (reason) => {
-        console.log('Disconnected ❌', reason);
+      s.on('disconnect', (reason: any) => {
         socketStore.setConnected(false);
       });
-
-      // 타임아웃 설정 (10초)
-      setTimeout(() => {
-        if (!s.connected) {
-          s.off('connect', onConnect);
-          s.off('connect_error', onError);
-          reject(new Error('Socket connection timeout'));
-        }
-      }, 10000);
     });
+
+    return connectingPromise.value;
   };
 
   const disconnect = () => {
-    socketStore.socket?.disconnect();
-    socketStore.clear();
+    if (!import.meta.client) return;
+    
+    if (socketStore.socket) {
+      socketStore.socket.disconnect();
+      socketStore.clear();
+      connectingPromise.value = null;
+    }
   };
 
   return {

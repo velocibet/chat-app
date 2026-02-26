@@ -15,6 +15,7 @@
 
 .users-container {
   display: flex;
+  position: relative;
   flex-direction: column;
   align-items: center;
   border-left: #333333 1px solid;
@@ -22,6 +23,13 @@
   width: 250px;
   height: 100%;
   max-height: 100vh;
+}
+
+.users-container .title .icon {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  cursor: pointer;
 }
 
 .users-container .users-list {

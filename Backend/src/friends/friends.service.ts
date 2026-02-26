@@ -1,9 +1,14 @@
 import { Injectable, HttpException, InternalServerErrorException, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { FriendRequestDto, HandleFriendRequestDto } from './dto/friends.dto';
+import { ChatService } from '../chat/chat.service';
 import { pool } from '../database';
 
 @Injectable()
 export class FriendsService {
+  constructor(
+    private readonly chatService: ChatService,
+  ) {}
+
   /**
    * 친구를 요청합니다.
    * @param username 친구를 요청하는 사용자의 이름
@@ -153,7 +158,22 @@ export class FriendsService {
     );
 
     if (friends.length === 0) return [];
-    return friends
+
+    try {
+      const userIds = friends.map(f => f.userId);
+      const onlineStatuses = await this.chatService.getUsersStatus(userIds);
+
+      return friends.map(friend => {
+        const statusObj = onlineStatuses.find(s => s.userId === friend.userId);
+        return {
+          ...friend,
+          isOnline: statusObj ? statusObj.isOnline : false
+        };
+      });
+    } catch (error) {
+      console.error('온라인 상태 조회 실패:', error);
+      return friends.map(friend => ({ ...friend, isOnline: false }));
+    }
   }
 
   /**
@@ -254,7 +274,8 @@ export class FriendsService {
         b.blocked_id,
         b.created_at,
         u.username,
-        u.nickname
+        u.nickname,
+        u.profile_url_name AS "profileUrlName"
       FROM blocks b
       JOIN users u ON b.blocked_id = u.id
       WHERE b.blocker_id = $1

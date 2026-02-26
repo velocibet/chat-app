@@ -1,4 +1,4 @@
-import { UseInterceptors, UploadedFile, Controller, Get, Post, Body, Req, Res, Param, ValidationPipe , BadRequestException, InternalServerErrorException, UnauthorizedException, NotFoundException, Patch, ParseIntPipe } from '@nestjs/common';
+import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete, Body, Req, Res, Param, ValidationPipe , BadRequestException, InternalServerErrorException, UnauthorizedException, NotFoundException, Patch, ParseIntPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChatroomDto } from './dto/chatroom.dto';
 import type { Request, Response } from 'express';
@@ -135,9 +135,18 @@ export class ChatroomController {
     async invite(
         @Param('id', ParseIntPipe) roomId: number,
         @User('userId') userId: number,
-        @Body() Body
+        @Body() body: { members: number[] }
     ) {
-        const { member } = Body;
-        return await this.ChatroomService.invite(userId, roomId, member);
+        const { members } = body;
+        return await this.ChatroomService.invite(userId, roomId, members);
+    }
+
+    @Delete('room/:id/kick/:targetId')
+    async kick(
+        @Param('id', ParseIntPipe) roomId: number,
+        @Param('targetId', ParseIntPipe) targetId: number,
+        @User('userId') userId: number
+    ) {
+        return await this.ChatroomService.kick(userId, roomId, targetId);
     }
 }

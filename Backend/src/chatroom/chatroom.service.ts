@@ -1,4 +1,4 @@
-import { Injectable, Inject, forwardRef, HttpException, InternalServerErrorException, ForbiddenException, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject, forwardRef, HttpException, NotFoundException, InternalServerErrorException, ForbiddenException, BadRequestException, UnauthorizedException } from '@nestjs/common';
 import { ChatGateway } from 'src/chat/ChatGateway';
 import { pool } from '../database';
 
@@ -295,26 +295,47 @@ export class ChatroomService {
         return rowCount > 0;
     }
 
-    async invite(userId: number, roomId: number, member: number) {
+    async invite(userId: number, roomId: number, members: number[]) {
+        const { rowCount: isOwner } = await pool.query(
+            `SELECT 1 FROM room WHERE id = $1 AND owner_user_id = $2`,
+            [roomId, userId]
+        );
+
+        if (isOwner === 0) throw new UnauthorizedException("방장만 초대할 수 있습니다.");
+
         const { rowCount } = await pool.query(`
             INSERT INTO room_user (room_id, user_id)
-            SELECT $1, $3
-            WHERE EXISTS (
-                SELECT 1
-                FROM room
-                WHERE id = $1
-                AND owner_user_id = $2
-            )
-            AND NOT EXISTS (
-                SELECT 1
-                FROM room_user
-                WHERE room_id = $1
-                AND user_id = $3
-            )
-        `, [roomId, userId, member]);
+            SELECT $1, u_id
+            FROM unnest($2::int[]) AS u_id
+            ON CONFLICT (room_id, user_id) DO NOTHING
+        `, [roomId, members]);
 
-        if ( rowCount === 0 ) throw new UnauthorizedException("초대 할 수 없습니다.");
+        return `${rowCount}명을 성공적으로 초대했습니다.`;
+    }
 
-        return "성공적으로 초대했습니다."
+    async kick(userId: number, roomId: number, targetId: number) {
+        if (userId === targetId) {
+            throw new BadRequestException("자기 자신은 강퇴할 수 없습니다. 대신 '방 나가기'를 이용해주세요.");
+        }
+
+        const { rowCount: isOwner } = await pool.query(
+            `SELECT 1 FROM room WHERE id = $1 AND owner_user_id = $2`,
+            [roomId, userId]
+        );
+
+        if (isOwner === 0) {
+            throw new UnauthorizedException("방장만 강퇴 권한이 있습니다.");
+        }
+
+        const { rowCount } = await pool.query(
+            `DELETE FROM room_user WHERE room_id = $1 AND user_id = $2`,
+            [roomId, targetId]
+        );
+
+        if (rowCount === 0) {
+            throw new NotFoundException("해당 방에 참여 중인 유저가 아닙니다.");
+        }
+
+        return "성공적으로 강퇴 처리되었습니다.";
     }
 }

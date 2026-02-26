@@ -10,6 +10,7 @@ const userApi = useUserApi();
 const friendsApi = useFriendsApi();
 const chatRoomApi = useChatroomApi();
 const profileImage = useProfileImage();
+const { onUserStatusChanged, offUserStatusChanged } = useChatSocket();
 const props = defineProps<props>();
     const emit = defineEmits<{
   (e: 'close'): void;
@@ -18,6 +19,7 @@ const props = defineProps<props>();
 const popupRef = ref<HTMLElement | null>(null);
 const userInfo = ref<User | null>(null);
 const isOpen = ref(false);
+const isOnline = ref(false);
 
 const menuItems = [
   { label: '친구 삭제', action: deleteFriend },
@@ -29,8 +31,15 @@ async function getUser() {
 
     if (res.success) {
         userInfo.value = res.data;
+        isOnline.value = res.data.isOnline || false;
     }
 }
+
+const handleStatusChange = (data: { userId: number, isOnline: boolean }) => {
+  if (data.userId === props.userId) {
+    isOnline.value = data.isOnline;
+  }
+};
 
 async function deleteFriend() {
     const check = confirm("정말 친구를 삭제하시겠습니까?");
@@ -83,10 +92,12 @@ const handleClickOutside = (event: MouseEvent) => {
 
 onMounted(async () => {
   await getUser();
+  onUserStatusChanged(handleStatusChange);
   document.addEventListener('click', handleClickOutside);
 })
 
 onUnmounted(() => {
+  offUserStatusChanged(handleStatusChange);
   document.removeEventListener('click', handleClickOutside);
 })
 </script>
@@ -106,7 +117,10 @@ onUnmounted(() => {
                     </li>
                 </ul>
                 <div class="title">
-                    <img :src="profileImage.getUrl(userInfo?.profileUrlName)"/>
+                    <div class="avatar-container">
+                        <img :src="profileImage.getUrl(userInfo?.profileUrlName)"/>
+                        <span :class="['status-dot', isOnline ? 'online' : 'offline']"></span>
+                    </div>
                     <div class="description">
                         <h4>{{ userInfo?.nickname }}</h4>
                         <span>{{ userInfo?.username }}</span>

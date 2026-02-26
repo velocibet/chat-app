@@ -34,6 +34,12 @@ export const useChatroomApi = () => {
      * @param roomId 나갈 채팅방의 Id
      */
     leaveRoom: (roomId: number) =>
-      api.patch<ApiResponse<any>>(`room/${roomId}/leave`)
+      api.patch<ApiResponse<any>>(`room/${roomId}/leave`),
+
+    inviteUsers: (roomId: number, userIds: number[]) =>
+      api.post<ApiResponse<any>>(`room/${roomId}/invite`, { members: userIds }),
+
+    kickUser: (roomId: number, targetId: number) =>
+      api.delete<ApiResponse<any>>(`room/${roomId}/kick/${targetId}`)
   };
 };

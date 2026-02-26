@@ -2,15 +2,12 @@
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineNuxtConfig({
-  modules: ['@pinia/nuxt', 'nuxt-gtag'],
+  modules: ['@pinia/nuxt'],
   imports: {
     dirs: [
       'composables/**',
       'types/**'
     ]
-  },
-  gtag: {
-    id: String(process.env.GTAG_ID)
   },
   app: {
     head: {
@@ -21,13 +18,6 @@ export default defineNuxtConfig({
       ],
       link: [
         { rel: 'icon', type: 'image/png', href: '/favicon.png' }
-      ],
-      script: [
-        {
-          src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2353891939220954',
-          async: true,
-          crossorigin: 'anonymous'
-        }
       ]
     }
   },

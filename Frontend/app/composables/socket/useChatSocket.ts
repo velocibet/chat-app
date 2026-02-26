@@ -208,6 +208,18 @@ export const useChatSocket = () => {
     socketStore.socket?.on('newRoomList', callback);
   };
 
+  const onUserStatusChanged = (callback: (data: { userId: number, isOnline: boolean }) => void) => {
+    socketStore.socket?.on('user_status_changed', callback);
+  };
+
+  const offUserStatusChanged = (callback?: (data: { userId: number, isOnline: boolean }) => void) => {
+    if (callback) {
+      socketStore.socket?.off('user_status_changed', callback);
+    } else {
+      socketStore.socket?.off('user_status_changed');
+    }
+  };
+
   return {
     joinRoom,
     sendMessageToRoom,
@@ -225,6 +237,8 @@ export const useChatSocket = () => {
     offFriendRequest,
     offLoadMessages,
     offNewMessage,
-    offDeletedMessage
+    offDeletedMessage,
+    onUserStatusChanged,
+    offUserStatusChanged
   };
 };

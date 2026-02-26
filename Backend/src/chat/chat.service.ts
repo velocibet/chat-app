@@ -18,6 +18,20 @@ export class ChatService {
         );
     }
 
+    async getUsersStatus(userIds: (number | string)[]) {
+        if (!userIds || userIds.length === 0) return [];
+
+        const redis = this.redisService.getClient();
+        const keys = userIds.map(id => `user:online:${id}`);
+
+        const results = await redis.mget(...keys);
+
+        return userIds.map((id, index) => ({
+            userId: Number(id),
+            isOnline: results[index] === '1',
+        }));
+    }
+
     async isOnline(userId: number): Promise<boolean> {
         const redis = this.redisService.getClient();
         const result = await redis.exists(`user:online:${userId}`);

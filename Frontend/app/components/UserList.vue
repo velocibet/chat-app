@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { MessageCirclePlus } from 'lucide-vue-next';
-import RoomPopup from '~/components/RoomPopup.vue';
+import CreateChatRoom from '~/components/CreateChatRoom.vue';
 
 const route = useRoute();
 const router = useRouter();
@@ -16,7 +16,7 @@ const friendsStore = useFriendsStore();
 const rooms = ref<ChatroomListItem[]>([]);
 const openedMenuId = ref<number | null>(null);
 const showRoomPopup = ref(false);
-const popupRef = ref<InstanceType<typeof RoomPopup> | null>(null);
+const popupRef = ref<InstanceType<typeof CreateChatRoom> | null>(null);
 const dropdownStyle = ref({});
 
 const { data: roomsData } = await useAsyncData<ApiResponse<ChatroomListItem[]>>('rooms', () => chatRoomApi.getRooms());
@@ -166,7 +166,7 @@ onUnmounted(() => {
     </div>
   </nav>
   <Teleport to="body">
-    <RoomPopup
+    <CreateChatRoom
       v-if="showRoomPopup"
       ref="popupRef"
       @close="showRoomPopup = false"

@@ -11,5 +11,13 @@ export const useFriendsStore = defineStore('friends', () => {
     friends.value = friendsData;
   }
 
-  return { friends, setFriends };
+  function updateFriendStatus(userId: number, isOnline: boolean) {
+    if (!friends.value) return;
+    const friend = friends.value.find(f => f.userId === userId);
+    if (friend) {
+      friend.isOnline = isOnline;
+    }
+  }
+
+  return { friends, setFriends, updateFriendStatus };
 })

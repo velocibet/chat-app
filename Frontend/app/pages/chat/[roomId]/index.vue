@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import '~/assets/css/chat-room.css';
-import { Crown } from 'lucide-vue-next';
+import { Crown, CirclePlus } from 'lucide-vue-next';
 
 definePageMeta({
   layout: "chat",
@@ -33,6 +33,9 @@ const isEnd = ref<boolean>(false);
 // const avatarMap = ref<Record<number, string>>({});
 const selectedUserId = ref<number | null>();
 const isInitialLoading = ref(true);
+const openedMenuId = ref<number | null>(null);
+const dropdownStyle = ref({});
+const isInviteModalOpen = ref(false);
 
 let loadMessagesHandler: ((response: any) => void) | null = null;
 let newMessageHandler: ((response: any) => void) | null = null;
@@ -142,6 +145,22 @@ function getImageUrl(item: any): string {
   return '';
 }
 
+function toggleUserMenu(userId: number, event: MouseEvent) {
+  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+
+  dropdownStyle.value = {
+    position: 'fixed',
+    top: rect.top + 'px',
+    right: rect.right + 'px',
+  };
+
+  openedMenuId.value = openedMenuId.value === userId ? null : userId;
+}
+
+function handleInvited() {
+  getRoom();
+}
+
 async function sendMessage() {
   if (isSending.value === true) return;
   isSending.value = true;
@@ -179,6 +198,18 @@ async function onScroll() {
 
 async function goToRoomSettings() {
   await router.push(`/chat/${roomId}/settings?from=${encodeURIComponent(route.path)}`);
+}
+
+async function handleKick(member: any) {
+  if (!confirm(`${member.nickname}님을 정말 강퇴하시겠습니까?`)) return;
+
+  const res = await chatRoomApi.kickUser(+roomId, member.user_id);
+  if (res.success) {
+    alert("강퇴되었습니다.");
+    await getRoom();
+  } else {
+    alert(res.message);
+  }
 }
 
 onMounted(async() => {
@@ -303,8 +334,12 @@ onUnmounted(() => {
           <div v-if="shouldShowHeader(index)" class="message-top">
             <img :src="profileImage.getUrl(
               targetRoom?.room_users.find((u: RoomUserRow) => u.user_id === item.sender_id)?.profileUrlName
-            )" />
-            <h4>{{ targetRoom?.room_users.find((u: RoomUserRow) => u.user_id === item.sender_id)?.nickname ?? '알수 없는 사용자' }}</h4>
+            )"
+            @click.stop="selectedUserId = item.sender_id"
+            style="cursor: pointer;" />
+            <h4
+            @click.stop="selectedUserId = item.sender_id"
+            style="cursor: pointer;">{{ targetRoom?.room_users.find((u: RoomUserRow) => u.user_id === item.sender_id)?.nickname ?? '알수 없는 사용자' }}</h4>
             <span>{{ formatKoreanTime(item.created_at) }}</span>
             <p @click.stop="toggleMenu(item.id)">︙</p>
             <ul v-if="openMenuId === item.id" class="dropdown-menu">
@@ -335,7 +370,10 @@ onUnmounted(() => {
       <input type="file" ref="fileInput" @change="handleFileChange" style="display:none" />
     </section>
     <section class="users-container">
-      <h3>참가자 목록</h3>
+      <div class="title">
+        <h3>참가자 목록</h3>
+        <CirclePlus class="icon" @click="isInviteModalOpen = true" @click.stop />
+      </div>
       <div class="users-list">
         <div v-for="user in targetRoom?.room_users" class="user" @click="selectedUserId = user.user_id">
           <div class="user-avatar">
@@ -346,6 +384,12 @@ onUnmounted(() => {
             <h5>{{ user.nickname }}</h5>
             <span>{{ user.username }}</span>
           </div>
+          <p @click="toggleUserMenu(user.id, $event)" @click.stop>︙</p>
+          <ul v-if="openedMenuId === user.id" :style="dropdownStyle" class="dropdown-menu">
+            <li>
+              <button @click="handleKick(user)" @click.stop>강퇴</button>
+            </li>
+          </ul>
         </div>
       </div>
     </section>
@@ -356,6 +400,14 @@ onUnmounted(() => {
       v-if="selectedUserId"
       :userId="selectedUserId"
       @close="selectedUserId = null"
+    />
+
+    <InviteModal 
+      v-if="isInviteModalOpen"
+      :roomId="roomId"
+      :alreadyJoinedUsers="targetRoom?.room_users || []"
+      @close="isInviteModalOpen = false"
+      @invited="handleInvited"
     />
   </Teleport>
 </template>

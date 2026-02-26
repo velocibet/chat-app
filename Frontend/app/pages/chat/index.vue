@@ -10,7 +10,6 @@ const friendListRef = ref<InstanceType<typeof FriendList> | null>(null);
 const friendRequestsRef = ref<InstanceType<typeof FriendRequests> | null>(null);
 
 const blockPopup = ref(false);
-const blockPopupRef = ref<HTMLElement | null>(null);
 const selectedUserId = ref<number | null>(null);
 const friendName = ref<string>("");
 const activeTab = ref<'friends' | 'requests'>('friends');
@@ -42,24 +41,13 @@ function openBlockList() {
   blockPopup.value = true;
 }
 
-function handleClickOutside(event: MouseEvent) {
-  if (!blockPopupRef.value) return;
-
-  if (!(blockPopupRef.value.contains(event.target as Node))) {
-    blockPopup.value = false;
-  }
-}
-
 onMounted(async () => {
   await connect();
   chatSocket.onFriendRequest(refresh);
-
-  document.addEventListener('click', handleClickOutside);
 });
 
 onBeforeUnmount(async () => {
   await chatSocket.offFriendRequest(refresh);
-  document.removeEventListener('click', handleClickOutside);
 });
 
 </script>

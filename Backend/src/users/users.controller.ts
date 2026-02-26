@@ -123,6 +123,11 @@ export class UsersController {
         const fileName = `${userId}_${timestamp}.webp`;
 
         const currentUser = await this.usersService.findOneById(userId);
+
+        if (!currentUser) {
+          throw new UnauthorizedException('사용자를 찾을 수 없습니다.');
+        }
+        
         const oldFileName = currentUser.profileUrlName;
 
         const processedImage = await sharp(file.buffer)
