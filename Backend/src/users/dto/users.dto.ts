@@ -1,5 +1,10 @@
 import { IsEmail, IsNotEmpty, IsNumber, IsString, MinLength, IsOptional } from 'class-validator';
 
+export class EmailDto {
+  @IsEmail()
+  email: string;
+}
+
 export class RegisterDto {
   @IsString({ message: '사용자 이름은 문자열이어야 합니다.' })
   @MinLength(6, { message: '사용자 이름은 최소 6자 이상이어야 합니다.' })

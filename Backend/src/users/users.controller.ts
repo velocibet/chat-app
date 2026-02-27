@@ -1,7 +1,7 @@
 import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete,  Body, Req, Res, Param, ParseIntPipe , NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException, Patch } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
-import { RegisterDto, LoginDto, UpdateDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
+import { EmailDto, RegisterDto, LoginDto, UpdateDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
 import type { Request, Response } from 'express';
 import { User } from 'src/decorators/user.decorator';
 import { SessionData } from 'src/decorators/session.decorator';
@@ -23,7 +23,7 @@ export class UsersController {
   ) {}
 
   @Post('email/send')
-  async send(@Body() body) {
+  async send(@Body() body: EmailDto) {
     const { email } = body;
     const token = await this.usersService.createToken(email);
     
