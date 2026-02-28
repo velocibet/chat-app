@@ -9,12 +9,12 @@ import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60 * 1000,  // 60초 (밀리초 단위)
-        limit: 100,      // 최대 100번
-      },
-    ]),
+    // ThrottlerModule.forRoot([
+    //   {
+    //     ttl: 60 * 1000,  // 60초 (밀리초 단위)
+    //     limit: 100,      // 최대 100번
+    //   },
+    // ]),
     UsersModule,
     ChatModule,
     ChatroomModule,

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import 'normalize.css';
 import { useFriendsStore } from '@/stores/friends';
+import { useSocket } from '#imports';
 
 const route = useRoute();
 const { connect, disconnect, socket } = useSocket();
