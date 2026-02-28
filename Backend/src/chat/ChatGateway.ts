@@ -152,16 +152,15 @@ import { promises } from 'dns';
     const [message, room] = await Promise.all([
       this.chatService.sendMessage(userId, roomId, content),
       this.chatroomService.findOne(roomId, userId)
-    ])
+    ]);
 
-    const blockedSocketIds: string[] = [];
-    for (const member of room.room_users) {
-      const isBlocked = await this.chatService.isBlocked(+member.user_id, +userId);
-      if (isBlocked) {
-        const socketId = this.connectedUsers.get(member.user_id);
-        if (socketId) blockedSocketIds.push(socketId);
-      }
-    }
+    const memberIds = room.room_users.map(m => +m.user_id);
+
+    const blockedUserIds = await this.chatService.getBlockedUsersInRoom(userId, memberIds);
+
+    const blockedSocketIds = blockedUserIds
+      .map(id => this.connectedUsers.get(id))
+      .filter(sid => !!sid);
 
     this.server
       .to(`room:${roomId}`)

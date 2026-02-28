@@ -174,18 +174,29 @@ export class ChatService {
         return rows && rows[0] ? !!rows[0].hasaccess || !!rows[0].hasAccess : false;
     }
 
-    async isBlocked(blocker_id: number, blocked_id: number) {
-        const { rows } = await pool.query(`
-            SELECT EXISTS (
-            SELECT 1
-            FROM blocks
-            WHERE blocker_id = $1
-                AND blocked_id = $2
-            ) AS "isBlocked"
-            `, [blocker_id, blocked_id]
-        );
+    // async isBlocked(blocker_id: number, blocked_id: number) {
+    //     const { rows } = await pool.query(`
+    //         SELECT EXISTS (
+    //         SELECT 1
+    //         FROM blocks
+    //         WHERE blocker_id = $1
+    //             AND blocked_id = $2
+    //         ) AS "isBlocked"
+    //         `, [blocker_id, blocked_id]
+    //     );
 
-        return rows[0].isBlocked;
+    //     return rows[0].isBlocked;
+    // }
+
+    async getBlockedUsersInRoom(userId: number, roomMemberIds: number[]) {
+    const { rows } = await pool.query(`
+        SELECT blocker_id 
+        FROM blocks 
+        WHERE blocked_id = $1 
+        AND blocker_id = ANY($2::int[])
+    `, [userId, roomMemberIds]);
+    
+    return rows.map(r => r.blocker_id);
     }
 
     async findRooms(userId: number) {
