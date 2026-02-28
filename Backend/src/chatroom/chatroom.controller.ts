@@ -24,7 +24,11 @@ export class ChatroomController {
         @Body() body: ChatroomDto
     ) {
         const { type, member, membersArray, title } = body;
-        return await this.ChatroomService.create(type, userId, member, membersArray, title);
+        const [ result ] = await Promise.all([
+            this.ChatroomService.create(type, userId, member, membersArray, title)
+        ])
+        
+        return result
     }
 
     @Get("rooms")

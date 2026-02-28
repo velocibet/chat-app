@@ -9,6 +9,7 @@ import { sessionMiddleware } from '../main';
 import { socketOk, socketFail } from '../socket.response';
 import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
 import { FriendsService } from 'src/friends/friends.service';
+import { promises } from 'dns';
 
 @UseGuards(AuthWsGuard)
 @WebSocketGateway({ cors: {
@@ -148,8 +149,10 @@ import { FriendsService } from 'src/friends/friends.service';
     const { userId } = client.request.session?.user;
     const { roomId, content } = payload;
 
-    const message = await this.chatService.sendMessage(userId, roomId, content);
-    const room = await this.chatroomService.findOne(roomId, userId);
+    const [message, room] = await Promise.all([
+      this.chatService.sendMessage(userId, roomId, content),
+      this.chatroomService.findOne(roomId, userId)
+    ])
 
     const blockedSocketIds: string[] = [];
     for (const member of room.room_users) {
