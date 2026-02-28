@@ -211,8 +211,8 @@ import { promises } from 'dns';
   }
 
   async updateRoomList(userId: number){
-    const data = await this.chatService.findRooms(userId);
+    // const data = await this.chatService.findRooms(userId);
     
-    this.server.to(`user:${userId}`).emit("newRoomList", socketOk("ok", data));
+    // this.server.to(`user:${userId}`).emit("newRoomList", socketOk("ok", data));
   }
 }
