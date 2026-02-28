@@ -10,5 +10,5 @@ export const pool = new Pool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_NAME,
   port: Number(process.env.DB_PORT) || 5432,
-  max: 10,
+  max: 50,
 });
