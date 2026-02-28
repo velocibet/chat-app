@@ -149,12 +149,10 @@ import { promises } from 'dns';
     const { userId } = client.request.session?.user;
     const { roomId, content } = payload;
 
-    const [message, room] = await Promise.all([
+    const [message, memberIds] = await Promise.all([
       this.chatService.sendMessage(userId, roomId, content),
-      this.chatroomService.findOne(roomId, userId)
+      this.chatroomService.getMemberIds(roomId)
     ]);
-
-    const memberIds = room.room_users.map(m => +m.user_id);
 
     const blockedUserIds = await this.chatService.getBlockedUsersInRoom(userId, memberIds);
 

@@ -189,14 +189,14 @@ export class ChatService {
     // }
 
     async getBlockedUsersInRoom(userId: number, roomMemberIds: number[]) {
-    const { rows } = await pool.query(`
-        SELECT blocker_id 
-        FROM blocks 
-        WHERE blocked_id = $1 
-        AND blocker_id = ANY($2::int[])
-    `, [userId, roomMemberIds]);
-    
-    return rows.map(r => r.blocker_id);
+        const { rows } = await pool.query(`
+            SELECT blocker_id 
+            FROM blocks 
+            WHERE blocked_id = $1 
+            AND blocker_id = ANY($2::int[])
+        `, [userId, roomMemberIds]);
+        
+        return rows.map(r => r.blocker_id);
     }
 
     async findRooms(userId: number) {

@@ -191,7 +191,16 @@ export class ChatroomService {
         return rows[0];
     }
 
+    async getMemberIds(roomId: number): Promise<number[]> {
+        const { rows } = await pool.query(`
+            SELECT user_id 
+            FROM room_user 
+            WHERE room_id = $1 
+            AND deleted_at IS NULL
+        `, [roomId]);
 
+        return rows.map(r => Number(r.user_id));
+    }
 
     async checkImageUser(filename: string, userId: number) {
         const { rowCount } = await pool.query(`
