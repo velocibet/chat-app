@@ -9,7 +9,6 @@ import { sessionMiddleware } from '../main';
 import { socketOk, socketFail } from '../socket.response';
 import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
 import { FriendsService } from 'src/friends/friends.service';
-import { promises } from 'dns';
 
 @UseGuards(AuthWsGuard)
 @WebSocketGateway({ cors: {
