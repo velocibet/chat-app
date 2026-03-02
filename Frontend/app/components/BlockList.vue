@@ -33,7 +33,7 @@ onMounted(async () => {
 
 <template>
   <div class="popup-overlay" @click.self="$emit('close')">
-    <div class="user-popup block-list-modal" ref="popupRef">
+    <div class="block-list-modal" ref="popupRef">
       <div class="user-info modal-header">
         <div class="me">
           <p class="name">차단 목록 관리</p>

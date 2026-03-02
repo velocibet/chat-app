@@ -91,25 +91,46 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="setting-page">
-    <h1>프로필 설정</h1>
+  <div class="setting-page profile-edit-container">
+    <div class="page-header">
+      <h1>프로필 설정</h1>
+      <p class="description">내 계정의 프로필 사진과 기본 정보를 관리하세요.</p>
+    </div>
 
     <form class="profile-form" @submit.prevent="submit">
-        <div class="form-top">
-          <label for="avatarInput" class="avatar-wrapper">
-            <img :src="avatarUrl" class="profile-image" />
-            <span class="avatar-overlay">변경</span>
-          </label>
-          <input v-model="nickname" type="text" placeholder="사용자 이름" class="primary-input" />
-          <input v-model="bio" type="text" placeholder="자기소개" class="primary-input" />
-        </div>
-        
+      <div class="avatar-section">
+        <label for="avatarInput" class="avatar-wrapper-circle">
+          <img :src="avatarUrl" class="profile-image" />
+          <div class="avatar-overlay">
+            <span class="icon">📷</span>
+            <span>교체</span>
+          </div>
+        </label>
+        <p class="avatar-tip">사진을 클릭하여 변경 (2MB 이하)</p>
         <input type="file" id="avatarInput" name="file" accept="image/*" hidden @change="handleFileChange" />
-        <button type="submit" class="outline-button">
-          저장
-        </button>
-    </form>
+      </div>
 
-    <p>사진을 클릭하여 프로필 사진을 변경할수 있습니다. 프로필 사진은 2MB 이하의 사진만 가능합니다.</p>
+      <div class="form-body">
+        <div class="input-group">
+          <label class="input-label">아이디</label>
+          <input :value="username" type="text" class="primary-input disabled" style="cursor: not-allowed;" disabled />
+          <span class="input-hint">아이디는 변경할 수 없습니다. 변경 필요시 관리자에게 문의하세요.</span>
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">닉네임</label>
+          <input v-model="nickname" type="text" placeholder="사용할 닉네임을 입력하세요" class="primary-input" />
+        </div>
+
+        <div class="input-group">
+          <label class="input-label">자기소개</label>
+          <textarea v-model="bio" placeholder="나를 표현하는 짧은 소개를 입력하세요" class="primary-textarea"></textarea>
+        </div>
+      </div>
+
+      <div class="form-footer">
+        <button type="submit" class="save-btn">프로필 저장하기</button>
+      </div>
+    </form>
   </div>
 </template>

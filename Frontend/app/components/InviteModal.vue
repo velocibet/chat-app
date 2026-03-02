@@ -53,7 +53,7 @@ onMounted(fetchFriends);
 
 <template>
   <div class="popup-overlay" @click.self="$emit('close')">
-    <div class="user-popup invite-modal">
+    <div class="invite-modal">
       <div class="user-info modal-header">
         <div class="me">
           <p class="name">대화상대 초대</p>

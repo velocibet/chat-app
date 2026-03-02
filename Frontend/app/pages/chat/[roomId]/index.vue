@@ -356,7 +356,7 @@ onUnmounted(() => {
             @click.stop="selectedUserId = item.sender_id"
             style="cursor: pointer;">{{ targetRoom?.room_users.find((u: RoomUserRow) => u.user_id === item.sender_id)?.nickname ?? '알수 없는 사용자' }}</h4>
             <span>{{ formatKoreanTime(item.created_at) }}</span>
-            <p @click.stop="toggleMenu(item.id)">︙</p>
+            <p @click.stop="toggleMenu(item.id)" style="cursor: pointer;">︙</p>
             <ul v-if="openMenuId === item.id" class="dropdown-menu">
               <li v-if="item.sender_id === authStore.user?.userId">
                 <button @click="deleteMessage(item)">삭제</button>
@@ -396,8 +396,8 @@ onUnmounted(() => {
           </div>
           <Crown v-if="user.user_id == targetRoom?.owner_user_id" :size="20" color="#FFD700" />
           <div class="user-info">
-            <h5>{{ user.nickname }}</h5>
-            <span>{{ user.username }}</span>
+            <h5 class="ellipsis">{{ user.nickname }}</h5>
+            <span class="ellipsis">{{ user.username }}</span>
           </div>
           <p @click="toggleUserMenu(user.id, $event)" @click.stop>︙</p>
           <ul v-if="openedMenuId === user.id" :style="dropdownStyle" class="dropdown-menu">

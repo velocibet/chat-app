@@ -1,24 +1,17 @@
-<script lang="ts" setup>
-import { watch } from 'vue';
+<script setup lang="ts">
+import { ref, onMounted } from 'vue';
 import { useAuthStore } from '~/stores/auth';
 import '~/assets/css/default-layout.css';
 import description01 from '~/assets/images/description01.png';
 
 const authStore = useAuthStore();
 const router = useRouter();
-
-// definePageMeta({
-//   ssr: true
-// })
-
 const posts = ref<any>([]);
 
 async function getPosts() {
     try {
       const data : any = await $fetch("https://blog.velocibet.com/config.json");
-
       if (!data) return;
-
       data.posts.forEach((post: any) => {
         if (post.category === "devlog") posts.value.push(post);
       })
@@ -32,8 +25,7 @@ function goToPost(id : string){
 }
 
 onMounted(() => {
-  const elements = document.querySelectorAll('.sections section, .fade-in');
-
+  const elements = document.querySelectorAll('.fade-up, .slide-in');
   const observer = new IntersectionObserver(
     (entries) => {
       entries.forEach((entry) => {
@@ -42,86 +34,105 @@ onMounted(() => {
         }
       });
     },
-    { threshold: 0.2 }
+    { threshold: 0.1 }
   );
-
   elements.forEach((el) => observer.observe(el));
   getPosts();
 });
-
 </script>
 
 <template>
   <div class="default-main">
-    <div class="main-title">
-      <p>v0.2.1-alpha - dev</p>
-
-      <h1><span class="highlight">빠르고 가볍게</span> <br> 연결되는 대화</h1>
-      <p>Velcoibet은 빠르고 가벼운 구조로 설계된 실시간 메신저로, <br> 안정적인 연결을 바탕으로 끊김 없는 대화를 제공합니다.</p>
-
-      <div class="main-decision">
-        <NuxtLink to="/register" class="outline-button">바로 시작하기</NuxtLink>
-        <NuxtLink to="/login" class="primary-button">이미 계정이 있습니다</NuxtLink>
+    <section class="hero-section">
+      <div class="hero-content fade-up">
+        <div class="version-badge">v0.2.1-alpha - dev</div>
+        <h1><span class="highlight">빠르고 가볍게</span><br>연결되는 대화</h1>
+        <p>Velocibet은 불필요한 무게를 덜어내고 오직 본질에 집중합니다.<br>기기에 상관없이 브라우저만 있다면 지금 바로 시작하세요.</p>
+        <div class="hero-btns">
+          <NuxtLink to="/register" class="cta-button primary">지금 바로 시작하기</NuxtLink>
+          <NuxtLink to="/login" class="cta-button outline">이미 계정이 있습니다</NuxtLink>
+        </div>
       </div>
-    </div>
-
-    <hr>
-
-    <div class="main-description">
-      <div class="first-section">
-        <h2>속도의 한계를 넘는 실시간 연결, Velocibet</h2>
-        <p>단순한 메신저를 넘어, 가장 빠르고 가볍게 메시지를 전달하기 위해 설계되었습니다. 불필요한 대기 시간 없이 지금 바로 대화를 시작하세요.</p>
+      <div class="hero-visual fade-up">
+        <div class="mockup-container">
+          <img :src="description01" alt="App Preview" class="app-mockup">
+          <div class="floating-badge notification">
+            <div class="icon">🔔</div>
+            <div class="text">
+              <strong>실시간 알림</strong>
+              <span>새로운 메시지가 도착했습니다</span>
+            </div>
+          </div>
+        </div>
       </div>
+    </section>
 
-      <h2>벨로시벳만의 장점</h2>
-      <div class="sections">
-        <section class="slide-right">
-          <h4>WebSocket 기반의 초저지연 통신</h4>
-          <p>클라이언트와 서버가 상시 연결된 상태로 데이터를 주고받아, 메시지 전송 시 발생하는 지연 시간을 최소화했습니다. 별도의 새로고침 없이도 대화 상대방의 메시지를 즉각적으로 수신하며, 실제 대면 대화와 같은 실시간성을 보장합니다.</p>
-        </section>
-        <section class="slide-right">
-          <h4>가벼운 웹 아키텍처</h4>
-          <p>별도의 앱 설치 과정 없이 브라우저만 있다면 어디서든 접속 가능합니다. 가벼운 코드 구조로 설계되어 저사양 기기나 불안정한 네트워크 환경에서도 안정적으로 구동됩니다.</p>
-        </section>
-        <section class="slide-right">
-          <h4>고해상도 이미지 공유</h4>
-          <p>사진 전송 시 효율적인 데이터 압축 및 최적화 기술을 적용하여, 네트워크 환경에 구애받지 않고 빠르게 이미지를 주고받을 수 있습니다.</p>
-        </section>
+    <section class="stats-bar">
+      <div class="stat-item">
+        <span class="stat-value">0.1s</span>
+        <span class="stat-label">지연 없는 채팅</span>
       </div>
-    </div>
-
-    <hr>
-
-    <div class="second-description">
-      <div class="content fade-in">
-        <h2>"직관적인 UI", "빠른 파일 전송"</h2>
-        <p>지금 바로 친구와 연결하고 경험해보세요!</p>
+      <div class="stat-item">
+        <span class="stat-value">99.9%</span>
+        <span class="stat-label">무중단 서비스</span>
       </div>
-      <img :src="description01" class="fade-in">
-    </div>
+      <div class="stat-item">
+        <span class="stat-value">PWA</span>
+        <span class="stat-label">설치 없는 사용</span>
+      </div>
+    </section>
 
-    <hr>
+    <section class="feature-grid">
+      <h2 class="section-title fade-up">벨로시벳이 특별한 이유</h2>
+      <div class="grid-container">
+        <div class="feature-card slide-in">
+          <div class="card-icon">⚡</div>
+          <h4>빠른 실시간 채팅</h4>
+          <p>새로고침 없이 바로바로 전달되는 메시지. 끊김 없이 이어지는 대화를 경험하세요.</p>
+        </div>
+        <div class="feature-card slide-in" style="transition-delay: 0.1s">
+          <div class="card-icon">📱</div>
+          <h4>앱처럼 쓰는 웹</h4>
+          <p>설치할 필요 없이 홈 화면에 추가만 하면 끝. 푸시 알림까지 지원하는 앱 같은 사용성.</p>
+        </div>
+        <div class="feature-card slide-in" style="transition-delay: 0.2s">
+          <div class="card-icon">🖼️</div>
+          <h4>선명한 사진 공유</h4>
+          <p>화질은 그대로, 용량은 가볍게. 고화질 사진도 부담 없이 주고받을 수 있어요.</p>
+        </div>
+      </div>
+    </section>
 
-    <div class="blog-container">
-      <h2>개발 일지</h2>
-      <p>메신저의 자세한 내용이 궁금하시다면 저희 블로그를 방문해주세요! <strong><a href="https://blog.velocibet.com">블로그 바로가기</a></strong> </p>
-      <div class="posts">
-        <section v-for="item in posts" @click="goToPost(item.id)">
+    <section class="pwa-guide-section fade-up">
+      <div class="pwa-guide-content">
+        <h2>스토어 대신 홈 화면으로</h2>
+        <p>복잡한 가입과 다운로드 없이 링크 공유만으로 대화를 시작하세요. PWA 기술로 제작되어 브라우저 어디서나 강력합니다.</p>
+        <span class="description">*아래 방법은 Chrome 브라우저 기준입니다.</span>
+        <div class="guide-steps">
+          <div class="step"><span>1</span> 오른쪽 위 점 세개 클릭</div>
+          <div class="step"><span>2</span> 홈 화면에 추가</div>
+          <div class="step"><span>3</span> 앱 설치</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="blog-section fade-up">
+      <div class="section-header">
+        <h2>개발 일지</h2>
+        <a href="https://blog.velocibet.com" class="text-link">전체 보기 →</a>
+      </div>
+      <div class="blog-grid">
+        <div v-for="item in posts.slice(0, 3)" :key="item.id" class="blog-card" @click="goToPost(item.id)">
+          <span class="post-date">{{ new Date(item.date).toLocaleDateString() }}</span>
           <h4>{{ item.title }}</h4>
-          <p> {{ item.summary }} </p>
-          <span>
-            {{
-              new Date(item.date).getFullYear() + '년 ' +
-              (new Date(item.date).getMonth() + 1) + '월 ' +
-              new Date(item.date).getDate() + '일'
-            }}
-          </span>
-        </section>
+          <p>{{ item.summary }}</p>
+        </div>
       </div>
-    </div>
+    </section>
+
+    <section class="final-cta fade-up">
+      <h2>지금 바로 대화를 시작해볼까요?</h2>
+      <NuxtLink to="/register" class="cta-button primary large">벨로시벳 시작하기</NuxtLink>
+    </section>
   </div>
 </template>
-
-<style scoped>
-
-</style>

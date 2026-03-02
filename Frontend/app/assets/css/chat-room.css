@@ -1,261 +1,389 @@
 .room-container {
   display: flex;
-  justify-content: space-between;
-  width: 100%;
-  height: 100%;
+  flex: 1;
+  height: 100vh;
+  background: #000000;
 }
 
 .chat-container {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  height: 100%;
-  flex: 1;
-  max-height: 100vh;
-}
-
-.users-container {
-  display: flex;
   position: relative;
-  flex-direction: column;
-  align-items: center;
-  border-left: #333333 1px solid;
-  background-color: #1a1a1a;
-  width: 250px;
-  height: 100%;
-  max-height: 100vh;
+  background: #050505;
 }
 
-.users-container .title .icon {
-  position: absolute;
-  top: 15px;
-  right: 15px;
-  cursor: pointer;
-}
-
-.users-container .users-list {
+.message-title {
+  height: 70px;
+  padding: 5px 20px;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  width: 100%;
+  gap: 12px;
+  background: #0b0b0b;
+  border-bottom: 1px solid #1a1a1a;
 }
 
-.users-container .users-list .user {
-  display: flex;
-  justify-content: space-between;
-  padding: 0 12px;
-  gap: 6px;
-  align-items: center;
-  width: 100%;
-  height: 60px;
+.message-title img {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.users-container .users-list .user:hover {
-  cursor: pointer;
-  background-color: #333333;
-}
-
-.users-container .users-list .user * {
-  user-select: none;
-}
-
-.users-container .users-list .user .user-info {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-end;
+.title-content {
   flex: 1;
+}
+
+.title-content h4 {
+  font-family: 'PyeojinGothic-heavy';
+  font-size: 1.1rem;
+  color: #ffffff;
+}
+
+.title-content span {
+  font-size: 0.85rem;
+  color: #666666;
 }
 
 .message-container {
-  flex: 1 1 auto;
+  flex: 1;
   overflow-y: auto;
-  width: auto;
-  padding: 10px;
-  box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: #666 transparent;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-/* .message {
-
-} */
+.message {
+  max-width: 90%;
+  align-self: flex-start;
+}
 
 .message-top {
-  position: relative;
-  display: inline-flex;
-  justify-content: flex-start;
+  display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
 .message-top img {
   width: 40px;
-  height: 40px;
+  height: auto;
   border-radius: 50%;
-  object-fit: cover;
+}
+
+.message-top h4 {
+  font-size: 1rem;
+  font-family: 'PyeojinGothic-medium';
+  color: #ffffff;
 }
 
 .message-top span {
-  color: #777777;
   font-size: 0.8rem;
+  color: #666666;
 }
 
-.message-top p {
-  cursor: pointer;
-  user-select: none;
-}
-
-/* .message-menu {
-  position: absolute;
-  top: 0;
-  left: 100%;
-  min-width: 80px;
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 6px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  z-index: 10;
-}
-
-.message-menu button {
-  background: none;
-  border: none;
-  padding: 6px 10px;
-  text-align: left;
-  cursor: pointer;
-}
-
-.message-menu button:hover {
-  background: #f5f5f5;
-} */
-
-.chat-container form {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.message-form{
-  display: flex;
-  justify-content: space-between;
-  gap: 5px;
-  width: 100%;
-}
-
-.message-form button {
-  margin-left: 5px;
-  width: 60px;
-  height: 60px;
-}
-
-.chat-container form input {
-  width: calc(100% - 10px);
+.message p {
+  background: transparent;
+  padding: 2px 0 2px 36px;
+  line-height: 1.6;
+  font-size: 0.9rem;
+  color: #eeeeee;
 }
 
 .chat-image {
-  width: auto;
-  max-width: 100%;
-  height: auto;
-  max-height: 300px;
+  max-width: 400px;
+  border-radius: 8px;
+  margin: 5px 0 0 36px;
+  border: 1px solid #1a1a1a;
 }
 
-.message-title {
-  display: flex;
-  flex-shrink: 0;
-  justify-content: flex-start;
-  align-items: center;
-  width: 100%;
-  height: 70px;
-  background-color: #1a1a1a;
-  border-bottom: #333333 1px solid;
+.image-preview {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  background: #111111;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #333333;
 }
 
-.message-title .title-content {
-  margin-left: 20px;
-}
-
-.title-content h4 {
-  font-size: 1.2rem;
-}
-
-.title-content span {
-  font-size: 0.9rem;
-  color: #bbbbbb;
-}
-
-.message-title img {
-  width: 50px;
-  height: 50px;
+.image-preview button {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: #ff453a;
+  border: none;
   border-radius: 50%;
-  object-fit: cover;
-  margin-left: 10px;
+  width: 20px;
+  height: 20px;
+  color: white;
+  cursor: pointer;
+  font-size: 10px;
 }
 
-.isOnline {
-  margin-left: 15px;
+.message-form {
+  padding: 15px 20px;
+  display: flex;
+  gap: 12px;
+  background: #000000;
+  border-top: 1px solid #1a1a1a;
+}
+
+.message-form form {
+  flex: 1;
+}
+
+.message-form .primary-input {
+  width: 100%;
+  padding: 12px 16px;
+  background: #111111;
+  border: 1px solid #222222;
+  color: #ffffff;
+  border-radius: 6px;
+}
+
+.message-form .primary-input:focus {
+  border-color: #444444;
+  outline: none;
+}
+
+.users-container {
+  width: 240px;
+  background: #0b0b0b;
+  border-left: 1px solid #1a1a1a;
+  display: flex;
+  flex-direction: column;
+}
+
+.users-container .title {
+  padding: 0 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid #1a1a1a;
+}
+
+.users-container h3 {
+  font-size: 1.1rem;
+  color: #ffffff;
+  font-family: 'PyeojinGothic-medium';
+}
+
+.users-list {
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.user:hover {
+  background: #1a1a1a;
+}
+
+.user .user-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.user .user-info h5 {
+  font-size: 0.85rem;
+  color: #ffffff;
+  margin-bottom: 2px;
+  width: 100%;
+}
+
+.user .user-info span {
+  font-size: 0.75rem;
+  color: #555555;
+  width: 100%;
+}
+
+@media (max-width: 1024px) {
+  .users-container {
+    display: none;
+  }
+}
+
+.settings-page {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 60px 20px;
+  background: #050505;
+  min-height: 100vh;
+}
+
+.settings-card {
+  width: 100%;
+  max-width: 500px;
+  background: #0b0b0b;
+  border: 1px solid #1a1a1a;
+  border-radius: 16px;
+  padding: 40px;
+}
+
+.settings-header {
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+.settings-header h1 {
+  font-family: 'PyeojinGothic-heavy';
+  font-size: 1.5rem;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.subtitle {
   font-size: 0.9rem;
+  color: #666666;
 }
 
 .room-form {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 30px;
 }
 
-.form-top {
+.avatar-section {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 15px;
 }
 
-.avatar-wrapper {
+.avatar-container {
   position: relative;
-  display: inline-block;
+  width: 120px;
+  height: 120px;
+  border-radius: 30px;
+  overflow: hidden;
   cursor: pointer;
+  background: #1a1a1a;
+  border: 1px solid #222222;
 }
-.profile-image {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
+
+.profile-preview {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  border: 2px solid #ddd;
-  display: block;
 }
 
 .avatar-overlay {
   position: absolute;
   inset: 0;
-
+  background: rgba(0, 0, 0, 0.7);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.4);
-  color: white;
-  font-size: 14px;
-  font-weight: 500;
-
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s ease;
+  color: #ffffff;
+  font-size: 0.8rem;
 }
 
-.avatar-wrapper:hover .avatar-overlay {
+.avatar-container:hover .avatar-overlay {
   opacity: 1;
 }
 
-@media (max-width: 768px) {
-  .message-title {
-    width: 100vw;
-  }
+.help-text {
+  font-size: 0.8rem;
+  color: #444444;
+}
 
-  .message-title img {
-    margin-left: 60px;
-  }
+.input-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
 
+.input-label {
+  font-size: 0.85rem;
+  color: #888888;
+  font-family: 'PyeojinGothic-medium';
+}
+
+.settings-input {
+  width: 100%;
+  padding: 14px 16px;
+  background: #0e0e0e;
+  border: 1px solid #222222;
+  color: #ffffff;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  transition: border-color 0.2s;
+}
+
+.settings-input:focus {
+  border-color: #444444;
+  outline: none;
+}
+
+.save-button {
+  width: 100%;
+  padding: 15px;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.save-button:hover {
+  opacity: 0.9;
+}
+
+.error-card {
+  text-align: center;
+  padding: 60px 40px;
+  background: #0b0b0b;
+  border: 1px solid #1a1a1a;
+  border-radius: 16px;
+  max-width: 400px;
+}
+
+.error-icon {
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.error-card h2 {
+  font-size: 1.2rem;
+  color: #ffffff;
+  margin-bottom: 10px;
+}
+
+.error-card p {
+  color: #666666;
+  margin-bottom: 30px;
+  font-size: 0.9rem;
+}
+
+.back-button {
+  padding: 10px 24px;
+  background: transparent;
+  border: 1px solid #333333;
+  color: #ffffff;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.back-button:hover {
+  background: #1a1a1a;
 }

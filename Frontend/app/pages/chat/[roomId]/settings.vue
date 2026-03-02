@@ -70,23 +70,55 @@ async function submit() {
 </script>
 
 <template>
-    <div v-if="chatRoomData?.data.type === 'group'">
+  <div class="settings-page">
+    <div v-if="chatRoomData?.data.type === 'group'" class="settings-card">
+      <div class="settings-header">
         <h1>그룹방 설정</h1>
-        <form class="room-form" @submit.prevent="submit">
-            <div class="form-top">
-                <label for="avatarInput" class="avatar-wrapper">
-                    <img :src="avatarUrl" class="profile-image" />
-                    <span class="avatar-overlay">변경</span>
-                </label>
-                <input v-model="title" type="text" placeholder="그룹방 이름" class="primary-input" />
-            </div>
-            <input type="file" id="avatarInput" name="file" accept="image/*" hidden @change="handleFileChange" />
-            <button type="submit" class="outline-button">저장</button>
-        </form>
+        <p class="subtitle">채팅방의 이름과 프로필 사진을 관리하세요.</p>
+      </div>
 
-        <p>사진을 클릭하여 프로필 사진을 변경할수 있습니다. 프로필 사진은 2MB 이하의 사진만 가능합니다.</p>
+      <form class="room-form" @submit.prevent="submit">
+        <div class="avatar-section">
+          <label for="avatarInput" class="avatar-picker">
+            <div class="avatar-container">
+              <img :src="avatarUrl" class="profile-preview" />
+              <div class="avatar-overlay">
+                <span class="icon">📷</span>
+                <span>변경</span>
+              </div>
+            </div>
+          </label>
+          <input 
+            type="file" 
+            id="avatarInput" 
+            accept="image/*" 
+            hidden 
+            @change="handleFileChange" 
+          />
+          <p class="help-text">2MB 이하의 이미지 파일만 가능합니다.</p>
+        </div>
+
+        <div class="input-section">
+          <label class="input-label">그룹방 이름</label>
+          <input 
+            v-model="title" 
+            type="text" 
+            placeholder="그룹방 이름을 입력하세요" 
+            class="settings-input" 
+          />
+        </div>
+
+        <div class="action-section">
+          <button type="submit" class="save-button">설정 저장하기</button>
+        </div>
+      </form>
     </div>
-    <div v-else>
-      접근할수 없는 경로입니다.
+
+    <div v-else class="error-card">
+      <div class="error-icon">⚠️</div>
+      <h2>접근할 수 없는 경로입니다.</h2>
+      <p>그룹 채팅방 설정만 변경할 수 있습니다.</p>
+      <button @click="router.back()" class="back-button">뒤로 가기</button>
     </div>
+  </div>
 </template>

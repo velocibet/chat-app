@@ -32,8 +32,8 @@ async function createRoom() {
 
 <template>
   <div class="popup-overlay" @click.self="$emit('close')">
-    <div class="user-popup create-room-modal" ref="popupRoot">
-      <div class="user-info modal-header">
+    <div class="create-room-modal" ref="popupRoot">
+      <div class="modal-header">
         <div class="me">
           <p class="name">새 채팅방 만들기</p>
         </div>

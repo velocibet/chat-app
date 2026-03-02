@@ -104,38 +104,51 @@ onUnmounted(() => {
 
 <template>
     <div class="popup-overlay">
-        <div class="user-popup" ref="popupRef">
-            <div v-if="userInfo" class="user-info">
-                <button @click="isOpen = !isOpen" class="dropdown-button">
-                    ︙
-                </button>
-                <ul v-if="isOpen" class="dropdown-menu">
-                    <li v-for="item in menuItems" :key="item.label">
-                        <button @click="item.action(); isOpen = false">
-                            {{ item.label }}
-                        </button>
-                    </li>
-                </ul>
-                <div class="title">
-                    <div class="avatar-container">
-                        <img :src="profileImage.getUrl(userInfo?.profileUrlName)"/>
-                        <span :class="['status-dot', isOnline ? 'online' : 'offline']"></span>
+        <div class="user-popup" ref="popupRef" @click.stop>
+            <div v-if="userInfo" class="user-card">
+                <div class="card-header">
+                    <button @click="isOpen = !isOpen" class="menu-trigger">︙</button>
+                    <Transition name="fade">
+                        <ul v-if="isOpen" class="popup-dropdown">
+                            <li v-for="item in menuItems" :key="item.label">
+                                <button @click="item.action(); isOpen = false">{{ item.label }}</button>
+                            </li>
+                        </ul>
+                    </Transition>
+                </div>
+
+                <div class="profile-section">
+                    <div class="avatar-wrapper">
+                        <img :src="profileImage.getUrl(userInfo?.profileUrlName)" class="main-avatar"/>
+                        <div :class="['status-indicator', isOnline ? 'online' : 'offline']"></div>
                     </div>
-                    <div class="description">
-                        <h4>{{ userInfo?.nickname }}</h4>
-                        <span>{{ userInfo?.username }}</span>
+                    <div class="user-titles">
+                        <h3>{{ userInfo?.nickname }}</h3>
+                        <span class="username">@{{ userInfo?.username }}</span>
+                        <span :class="['status-text', isOnline ? 'online' : 'offline']">
+                            {{ isOnline ? '현재 온라인' : '오프라인' }}
+                        </span>
                     </div>
                 </div>
-                <div class="choice">
-                    <button class="primary-button" @click="getChat">채팅</button>
-                    <button class="primary-button" @click="getFriend">친구 추가</button>
+
+                <div class="bio-section">
+                    <p v-if="userInfo?.bio" class="bio-text">{{ userInfo?.bio }}</p>
+                    <p v-else class="no-bio">등록된 자기소개가 없습니다.</p>
                 </div>
-                <span v-if="userInfo?.bio" class="bio">{{ userInfo?.bio }}</span>
-                <span v-else class="no-bio">자기소개가 없습니다.</span>
+
+                <div class="action-group">
+                    <button class="action-btn chat-btn" @click="getChat">
+                        메시지 보내기
+                    </button>
+                    <button class="action-btn add-btn" @click="getFriend">
+                        친구 추가
+                    </button>
+                </div>
             </div>
-            <div v-else>
+
+            <div v-else class="popup-loading">
                 <div class="spinner"></div>
-                <p>유저 정보를 불러오고 있습니다.</p>
+                <p>프로필을 불러오는 중...</p>
             </div>
         </div>
     </div>

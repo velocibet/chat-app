@@ -188,6 +188,36 @@ li {
   animation: fadeIn 0.2s ease-out;
 }
 
+/* 전체 스크롤바 설정 (Webkit 브라우저 - Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 6px; /* 세로 스크롤바 너비 */
+  height: 6px; /* 가로 스크롤바 높이 */
+}
+
+/* 스크롤바 트랙 (바탕) */
+::-webkit-scrollbar-track {
+  background: #000000; /* 배경과 동일한 블랙 */
+}
+
+/* 스크롤바 막대 (움직이는 부분) */
+::-webkit-scrollbar-thumb {
+  background: #222222; /* 평소에는 어두운 회색 */
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+/* 스크롤바 막대에 마우스를 올렸을 때 */
+::-webkit-scrollbar-thumb:hover {
+  background: #333333; /* 마우스 올리면 약간 더 밝게 */
+}
+
+.ellipsis {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  /* width나 flex: 1 등 너비 제한이 있어야 작동합니다 */
+}
+
 
 @keyframes spin {
   to {
