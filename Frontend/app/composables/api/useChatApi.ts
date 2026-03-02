@@ -5,6 +5,13 @@ export const useChatApi = () => {
   const api = useApi('/chat');
 
   return {
+    /** 채팅 읽음 처리 (unread_count 0으로 초기화) */
+    readMessage: async (roomId: number) => {
+      return api.post<string>('/read', {
+        roomId
+      }) as Promise<ApiResponse<string>>;
+    },
+    
     /** 채팅방 이미지 업로드 */
     sendImage: async (roomId: number, file: File) => {
       const formData = new FormData();

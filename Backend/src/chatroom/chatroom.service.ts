@@ -115,6 +115,7 @@ export class ChatroomService {
                 r.dm_hash,
                 r.created_at,
                 r.room_image_url,
+                ru_me.unread_count,
                 json_agg(
                     json_build_object(
                         'id', ru.id,
@@ -131,15 +132,12 @@ export class ChatroomService {
             FROM room r
             JOIN room_user ru ON ru.room_id = r.id AND ru.deleted_at IS NULL
             JOIN users u ON u.id = ru.user_id
+            JOIN room_user ru_me ON ru_me.room_id = r.id AND ru_me.user_id = $1
             WHERE r.deleted_at IS NULL
-            AND r.id IN (
-                SELECT room_id
-                FROM room_user
-                WHERE user_id = $1
-                AND deleted_at IS NULL
-                AND hidden = false
-            )
-            GROUP BY r.id;
+            AND ru_me.deleted_at IS NULL
+            AND ru_me.hidden = false
+            GROUP BY r.id, ru_me.unread_count
+            ORDER BY r.created_at DESC;
         `, [userId]);
 
         return rows;
@@ -155,6 +153,7 @@ export class ChatroomService {
                 r.dm_hash,
                 r.created_at,
                 r.room_image_url,
+                ru_me.unread_count,
                 json_agg(
                     json_build_object(
                         'id', ru.id,
@@ -171,17 +170,11 @@ export class ChatroomService {
             FROM room r
             JOIN room_user ru ON ru.room_id = r.id AND ru.deleted_at IS NULL
             JOIN users u ON u.id = ru.user_id
+            JOIN room_user ru_me ON ru_me.room_id = r.id AND ru_me.user_id = $2
             WHERE r.id = $1
             AND r.deleted_at IS NULL
-            AND EXISTS (
-                SELECT 1 
-                FROM room_user 
-                WHERE room_id = r.id 
-                    AND user_id = $2
-                    AND deleted_at IS NULL
-                    AND hidden = false
-            )
-            GROUP BY r.id;
+            AND ru_me.deleted_at IS NULL
+            GROUP BY r.id, ru_me.unread_count;
         `, [roomId, userId]);
 
         if (!rows || rows.length === 0) {

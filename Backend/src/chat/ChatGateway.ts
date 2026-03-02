@@ -1,10 +1,11 @@
-import { UseGuards } from '@nestjs/common';
+import { UseGuards, Inject, forwardRef } from '@nestjs/common';
 import { OnGatewayInit, WebSocketServer, WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { ChatService } from './chat.service';
 import { ChatroomService } from 'src/chatroom/chatroom.service';
 import { Server, Socket } from 'socket.io';
 import { joinDirectRoom, sendMessage, previousMessage, deleteMessage } from './dto/chat.dto';
 import { RedisService } from 'src/redis/redis.service';
+import { FcmService } from 'src/fcm/fcm.service';
 import { sessionMiddleware } from '../main';
 import { socketOk, socketFail } from '../socket.response';
 import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
@@ -22,7 +23,8 @@ import { FriendsService } from 'src/friends/friends.service';
     private readonly chatService: ChatService,
     private readonly redisService: RedisService,
     private readonly chatroomService: ChatroomService,
-    private readonly friendsService: FriendsService
+    private readonly friendsService: FriendsService,
+    private readonly fcmService: FcmService,
   ) {}
 
   private connectedUsers = new Map<string, string>();
@@ -46,6 +48,8 @@ import { FriendsService } from 'src/friends/friends.service';
 
       return
     }
+
+    socket.data.userId = userId;
     
     await this.chatService.setUserOnline(userId.toString());
     this.connectedUsers.set(userId, socket.id);
@@ -141,28 +145,36 @@ import { FriendsService } from 'src/friends/friends.service';
   }
 
   @SubscribeMessage('sendMessage')
-  async sendMessage(
-    @MessageBody() payload : sendMessage,
-    @ConnectedSocket() client : Socket
-  ) {
+  async sendMessage(@MessageBody() payload: sendMessage, @ConnectedSocket() client: Socket) {
     const { userId } = client.request.session?.user;
     const { roomId, content } = payload;
+    const roomName = `room:${roomId}`;
+    const connectedSockets = await this.server.in(roomName).fetchSockets();
+    const activeUserIds = connectedSockets.map(s => Number(s.data.userId)).filter(id => !!id);
 
     const [message, memberIds] = await Promise.all([
-      this.chatService.sendMessage(userId, roomId, content),
+      this.chatService.sendMessage(userId, roomId, content, activeUserIds),
       this.chatroomService.getMemberIds(roomId)
     ]);
 
+    const senderName = '새 메시지';
+
     const blockedUserIds = await this.chatService.getBlockedUsersInRoom(userId, memberIds);
+    const blockedSocketIds = blockedUserIds.map(id => this.connectedUsers.get(id.toString())).filter(sid => !!sid);
 
-    const blockedSocketIds = blockedUserIds
-      .map(id => this.connectedUsers.get(id))
-      .filter(sid => !!sid);
+    this.server.to(roomName).except(blockedSocketIds).emit('newMessage', socketOk('ok', message));
 
-    this.server
-      .to(`room:${roomId}`)
-      .except(blockedSocketIds)
-      .emit('newMessage', socketOk('ok', message));
+    const offlineIds: number[] = memberIds.map(id => Number(id)).filter(mId => mId !== Number(userId) && !activeUserIds.includes(mId));
+    offlineIds.forEach(mId => {
+      this.server.to(`user:${mId}`).emit('unreadUpdate', { roomId });
+    });
+
+    if (offlineIds.length > 0) {
+      const tokens = await this.fcmService.getPushTokens(offlineIds);
+      if (tokens.length > 0) {
+        await this.fcmService.sendPush(tokens as string[], senderName, content || '메시지가 도착했습니다.', { roomId: String(roomId) });
+      }
+    }
   }
 
   @SubscribeMessage('loadMessages')
@@ -210,8 +222,8 @@ import { FriendsService } from 'src/friends/friends.service';
   }
 
   async updateRoomList(userId: number){
-    // const data = await this.chatService.findRooms(userId);
+    const data = await this.chatService.findRooms(userId);
     
-    // this.server.to(`user:${userId}`).emit("newRoomList", socketOk("ok", data));
+    this.server.to(`user:${userId}`).emit("newRoomList", socketOk("ok", data));
   }
 }

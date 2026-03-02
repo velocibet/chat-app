@@ -15,4 +15,10 @@ describe('UsersController', () => {
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
+
+  it('should expose push-token endpoint method', () => {
+    // method exists and returns a promise
+    expect(controller.savePushToken).toBeDefined();
+    expect(typeof controller.savePushToken).toBe('function');
+  });
 });

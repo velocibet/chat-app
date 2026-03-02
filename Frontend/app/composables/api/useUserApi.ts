@@ -33,5 +33,9 @@ export const useUserApi = () => {
 
     /** [GET] 특정 유저 프로필 조회 */
     getOtherProfile: (userId: number) => api.get<User>(`/${userId}`),
+
+    /** [POST] 푸시 토큰 등록 */
+    sendPushToken: (token: string, deviceType?: string) =>
+      api.post('/push-token', { token, deviceType }),
   };
 };

@@ -6,19 +6,21 @@ import { ChatroomModule } from './chatroom/chatroom.module';
 import { FriendsModule } from './friends/friends.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { FcmModule } from './fcm/fcm.module';
 
 @Module({
   imports: [
     ThrottlerModule.forRoot([
       {
-        ttl: 60 * 1000,  // 60초 (밀리초 단위)
-        limit: 10000,      // 최대 100번
+        ttl: 60 * 1000,
+        limit: 100,
       },
     ]),
     UsersModule,
-    ChatModule,
     ChatroomModule,
     FriendsModule,
+    FcmModule,
+    ChatModule,
   ],
   providers: [
     {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { pool } from '../database';
 import { RedisService } from 'src/redis/redis.service';
 
@@ -56,15 +56,38 @@ export class ChatService {
         return rowCount > 0;
     }
 
-    async sendMessage(senderId: number, roomId: number, content: string) {
-        const { rows } = await pool.query(
-            `INSERT INTO messages (room_id, sender_id, content, status)
-            VALUES ($1, $2, $3, $4)
-            RETURNING *`,
-            [roomId, senderId, content, 'sent']
-        );
+    async sendMessage(senderId: number, roomId: number, content: string, activeUserIds: number[]) {
+        const client = await pool.connect();
 
-        return rows[0];
+        try {
+            await client.query('BEGIN');
+
+            const messageRes = await client.query(
+                `INSERT INTO messages (room_id, sender_id, content)
+                VALUES ($1, $2, $3)
+                RETURNING *`,
+                [roomId, senderId, content]
+            );
+            const newMessage = messageRes.rows[0];
+
+            await client.query(
+                `UPDATE room_user 
+                SET unread_count = unread_count + 1 
+                WHERE room_id = $1 
+                AND user_id != $2 
+                AND NOT (user_id = ANY($3::int[]))`,
+                [roomId, senderId, activeUserIds]
+            );
+
+            await client.query('COMMIT');
+            return newMessage;
+
+        } catch (error) {
+            await client.query('ROLLBACK');
+            throw error;
+        } finally {
+            client.release();
+        }
     }
 
     async getMessages(roomId: number) {
@@ -136,9 +159,9 @@ export class ChatService {
 
     async saveImageUrl(userId: number, roomId: number, url: string) {
         const result = await pool.query(`
-            INSERT INTO messages (room_id, sender_id, content, status, isfile)
-            VALUES ($1, $2, $3, 'sent', 1)
-            RETURNING id, room_id, sender_id, content, status, isfile, created_at
+            INSERT INTO messages (room_id, sender_id, content, isfile)
+            VALUES ($1, $2, $3, 1)
+            RETURNING id, room_id, sender_id, content, isfile, created_at
             `,
             [roomId, userId, url]
         );
@@ -237,5 +260,17 @@ export class ChatService {
         `, [userId]);
 
         return rows;
+    }
+
+    async readMessage(userId: number, roomId: number) {
+        const { rowCount } = await pool.query(`
+            UPDATE room_user
+            SET unread_count = 0
+            WHERE room_id = $1 AND user_id = $2;
+        `, [roomId, userId])
+
+        if (rowCount < 1) throw new UnauthorizedException("권한이 없습니다.");
+
+        return
     }
 }

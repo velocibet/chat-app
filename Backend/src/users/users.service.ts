@@ -4,7 +4,6 @@ import { pool } from '../database';
 import { NotFound } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import { RegisterDto, LoginDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
-import { ChatService } from 'src/chat/chat.service';
 
 interface LoginLog {
   username: string;
@@ -15,9 +14,7 @@ interface LoginLog {
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private readonly chatService: ChatService,
-  ) {}
+  constructor() {}
   
   async createToken(email: string) {
     const token = crypto.randomBytes(32).toString('hex');
@@ -144,7 +141,7 @@ export class UsersService {
 
     const user = users[0];
 
-    const passwordValid = true; // await argon2.verify(user.password, password);
+    const passwordValid = await argon2.verify(user.password, password);
     if (!passwordValid) throw new BadRequestException('아이디 또는 비밀번호가 올바르지 않습니다.');
 
     return { success: true, userId: user.id, username: user.username, nickname: user.nickname };
@@ -311,17 +308,69 @@ export class UsersService {
     if (!rows[0]) return null;
 
     const user = rows[0];
-    const [status] = await this.chatService.getUsersStatus([userId]);
-
     const data = {
       userId: user.id,
       username: user.username,
       nickname: user.nickname,
       bio: user.bio,
       profileUrlName: user.profile_url_name,
-      isOnline: status ? status.isOnline : false
+      isOnline: false,
     };
 
     return data;
+  }
+
+  /**
+   * 저장된 푸시 토큰을 사용자별로 등록/업데이트합니다.
+   * @param userId 사용자 아이디
+   * @param token FCM에서 발급받은 토큰 문자열
+   * @param deviceType (선택) 디바이스 유형
+   */
+  async savePushToken(userId: number, token: string, deviceType?: string) {
+    if (!token) return;
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
+
+      const { rows } = await client.query(
+        `SELECT id FROM user_push_tokens WHERE "userId" = $1 AND token = $2`,
+        [userId, token]
+      );
+
+      if (rows.length > 0) {
+        await client.query(
+          `UPDATE user_push_tokens
+           SET "deviceType" = $2, "updatedAt" = NOW()
+           WHERE id = $3`,
+          [token, deviceType, rows[0].id]
+        );
+      } else {
+        await client.query(
+          `INSERT INTO user_push_tokens ("userId", token, "deviceType")
+           VALUES ($1::int, $2::text, $3::text)`,
+          [userId, token, deviceType]
+        );
+      }
+      await client.query('COMMIT');
+      console.log(`✅ 유저 ${userId}의 토큰 저장/갱신 완료`);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      console.error('push token 저장 실패', error);
+    } finally {
+      client.release();
+    }
+  }
+
+  /**
+   * 주어진 사용자 목록에 속한 모든 토큰을 가져옵니다.
+   */
+  async getPushTokens(userIds: number[]) {
+    if (!userIds || userIds.length === 0) return [];
+    const { rows } = await pool.query(
+      `SELECT token FROM user_push_tokens WHERE "userId" = ANY($1::int[])`,
+      [userIds]
+    );
+    const tokens = Array.from(new Set(rows.map(r => r.token)));
+    return tokens;
   }
 }

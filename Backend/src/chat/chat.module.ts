@@ -5,11 +5,16 @@ import { RedisModule } from 'src/redis/redis.module';
 import { ChatController } from './chat.controller';
 import { ChatroomService } from 'src/chatroom/chatroom.service';
 import { FriendsModule } from 'src/friends/friends.module';
+import { FcmModule } from 'src/fcm/fcm.module';
 
 @Module({
   providers: [ChatGateway, ChatService, ChatroomService],
-  imports: [RedisModule, forwardRef(() => FriendsModule)],
+  imports: [
+    RedisModule,
+    forwardRef(() => FriendsModule),
+    FcmModule
+  ],
   exports: [ChatService, ChatGateway],
-  controllers: [ChatController]
+  controllers: [ChatController],
 })
 export class ChatModule {}

@@ -1,9 +1,11 @@
 <script lang="ts" setup>
 import auth from '~/middleware/auth';
+import { usePushNotification } from '~/composables/usePushNotification';
 
 const userApi = useUserApi();
 const router = useRouter();
 const authStore = useAuthStore();
+const { requestAndSaveToken } = usePushNotification();
 
 const username = ref<string>('');
 const password = ref<string>('');
@@ -22,6 +24,8 @@ async function getLogin() {
     const me = await userApi.getMe();
     if (me.success) {
         authStore.setUser(me.data);
+        // 푸시 권한/토큰 요청
+        await requestAndSaveToken();
         router.push('/chat');
     } else {
         alert(me.message);

@@ -2,7 +2,7 @@
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 export default defineNuxtConfig({
-  modules: ['@pinia/nuxt'],
+  modules: ['@pinia/nuxt', '@vite-pwa/nuxt'],
   imports: {
     dirs: [
       'composables/**',
@@ -17,13 +17,46 @@ export default defineNuxtConfig({
         { name: 'viewport', content: 'width=device-width, initial-scale=1' }
       ],
       link: [
-        { rel: 'icon', type: 'image/png', href: '/favicon.png' }
+        { rel: 'icon', type: 'image/png', href: '/favicon.png' },
+        { rel: 'manifest', href: '/manifest.webmanifest' }
       ]
     }
   },
-  // devServer: {
-  //   port: 3100
-  // },
+  pwa: {
+    registerType: 'autoUpdate',
+    injectRegister: 'script',
+    manifest: {
+      name: '벨로시벳',
+      short_name: '벨로시벳',
+      description: '실시간 채팅 애플리케이션',
+      theme_color: '#ffffff',
+      display: 'standalone',
+      icons: [
+        {
+          src: 'pwa-192x192.png',
+          sizes: '192x192',
+          type: 'image/png',
+          purpose: 'any'
+        },
+        {
+          src: 'pwa-512x512.png',
+          sizes: '512x512',
+          type: 'image/png',
+          purpose: 'any'
+        }
+      ]
+    },
+    workbox: {
+      navigateFallback: '/',
+      importScripts: ['/firebase-messaging-sw.js'],
+      globPatterns: ['**/*.{js,css,html,png,svg,ico}'],
+    },
+    devOptions: {
+      enabled: true,
+      type: 'module',
+      suppressWarnings: true
+    }
+  },
   vite: {
     plugins: [tsconfigPaths()]
   },
@@ -31,7 +64,14 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE,
       wsBase: process.env.NUXT_PUBLIC_WS_BASE,
-      imgBase: process.env.NUXT_PUBLIC_IMG_BASE
+      imgBase: process.env.NUXT_PUBLIC_IMG_BASE,
+      vapidKey: process.env.NUXT_PUBLIC_VAPID_KEY,
+      firebaseApiKey: process.env.NUXT_PUBLIC_FIREBASE_API_KEY,
+      firebaseAuthDomain: process.env.NUXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      firebaseProjectId: process.env.NUXT_PUBLIC_FIREBASE_PROJECT_ID,
+      firebaseStorageBucket: process.env.NUXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      firebaseMessagingSenderId: process.env.NUXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      firebaseAppId: process.env.NUXT_PUBLIC_FIREBASE_APP_ID,
     }
   },
   css: [

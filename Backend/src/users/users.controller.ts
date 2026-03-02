@@ -1,7 +1,7 @@
 import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete,  Body, Req, Res, Param, ParseIntPipe , NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException, Patch } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { UsersService } from './users.service';
-import { EmailDto, RegisterDto, LoginDto, UpdateDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
+import { EmailDto, RegisterDto, LoginDto, UpdateDto, ChangePasswordDto, DeleteDto, PushTokenDto } from './dto/users.dto';
 import type { Request, Response } from 'express';
 import { User } from 'src/decorators/user.decorator';
 import { SessionData } from 'src/decorators/session.decorator';
@@ -102,6 +102,19 @@ export class UsersController {
     res.clearCookie('connect.sid', { path: '/' });
 
     return "로그아웃 되었습니다.";
+  }
+
+  @Post('push-token')
+  async savePushToken(
+    @User('userId') userId: number,
+    @Body() body: PushTokenDto
+  ) {
+    const { token, deviceType } = body;
+    if (!token) {
+      throw new BadRequestException('token is required');
+    }
+    await this.usersService.savePushToken(userId, token, deviceType);
+    return { success: true };
   }
 
   @Patch()

@@ -2,10 +2,12 @@
 import 'normalize.css';
 import { useFriendsStore } from '@/stores/friends';
 import { useSocket } from '#imports';
+import { usePushNotification } from './composables/usePushNotification';
 
 const route = useRoute();
 const { connect, disconnect, socket } = useSocket();
 const friendsStore = useFriendsStore();
+const { requestAndSaveToken } = usePushNotification();
 
 let heartbeatTimer: NodeJS.Timeout | null = null;
 
@@ -41,6 +43,10 @@ watch(() => route.path, async (newPath) => {
     disconnect();
   }
 }, { immediate: true });
+
+onMounted(async () => {
+  await requestAndSaveToken();
+});
 
 onUnmounted(() => {
   stopHeartbeat();

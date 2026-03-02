@@ -41,6 +41,7 @@
     "dotenv": "^17.2.3",
     "express-session": "^1.19.0",
     "file-type": "^21.3.0",
+    "firebase-admin": "^13.7.0",
     "ioredis": "^5.10.0",
     "multer": "^2.0.2",
     "node-pg-migrate": "^8.0.4",

@@ -40,6 +40,7 @@ const isInviteModalOpen = ref(false);
 let loadMessagesHandler: ((response: any) => void) | null = null;
 let newMessageHandler: ((response: any) => void) | null = null;
 let deletedMessageHandler: ((response: any) => void) | null = null;
+let handleVisibilityChange: any;
 
 function selectFile () {
   fileInput.value?.click()
@@ -214,6 +215,15 @@ async function handleKick(member: any) {
 
 onMounted(async() => {
   await getRoom();
+
+  handleVisibilityChange = () => {
+    if (document.visibilityState === 'visible') {
+      chatApi.readMessage(+roomId);
+    }
+  };
+
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+  window.addEventListener('focus', handleVisibilityChange); 
   
   try {
     await chatSocket.waitForSocket();
@@ -228,6 +238,8 @@ onMounted(async() => {
 
   messages.value = [];
   isEnd.value = false;
+
+  chatApi.readMessage(+roomId);
 
   // if (loadMessagesHandler) {
   //   socketInstance.off('loadMessages', loadMessagesHandler);
@@ -299,6 +311,9 @@ onUnmounted(() => {
     chatSocket.offDeletedMessage(deletedMessageHandler);
     deletedMessageHandler = null;
   }
+
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+  window.removeEventListener('focus', handleVisibilityChange);
 
   chatSocket.leaveRoom(+roomId);
 })

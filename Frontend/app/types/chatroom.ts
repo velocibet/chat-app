@@ -12,7 +12,7 @@ export interface Room {
   owner_user_id: number | null;
   dm_hash: string | null;
   created_at: string;
-  room_image_url: string;
+  room_image_url: string | null;
 }
 
 export interface RoomUserRow {
@@ -21,12 +21,13 @@ export interface RoomUserRow {
   user_id: number;
   username: string;
   nickname: string;
-  profileUrlName: string;
+  profileUrlName: string | null;
   role: 'owner' | 'member';
   joined_at: string;
   left_at: string | null;
 }
 
 export interface ChatroomListItem extends Room {
+  unread_count: number;
   room_users: RoomUserRow[];
 }

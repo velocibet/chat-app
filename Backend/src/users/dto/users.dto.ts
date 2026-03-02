@@ -55,3 +55,12 @@ export class DeleteDto {
   @IsString({ message: "비밀번호를 입력하세요." })
   currentPassword : string;
 }
+
+export class PushTokenDto {
+  @IsString({ message: '토큰값이 필요합니다.' })
+  token: string;
+
+  @IsOptional()
+  @IsString({ message: '디바이스 타입은 문자열이어야 합니다.' })
+  deviceType?: string;
+}

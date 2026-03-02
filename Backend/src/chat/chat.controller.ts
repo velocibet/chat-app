@@ -13,6 +13,8 @@ import { socketOk } from 'src/socket.response';
 import { DeleteObjectCommandOutput, DeleteObjectCommand, GetObjectCommandOutput, PutObjectCommand, GetObjectCommand, NotFound } from "@aws-sdk/client-s3";
 import { s3 } from '../bucket';
 import sharp from 'sharp';
+import { joinDirectRoom } from './dto/chat.dto';
+import { promiseHooks } from 'v8';
 
 @Controller('chat')
 export class ChatController {
@@ -118,5 +120,17 @@ export class ChatController {
       } catch(error) {
         throw new InternalServerErrorException("알수 없는 이유로 파일 불러오기에 실패했습니다", {cause: error});
       }
+    }
+
+    @Post('read')
+    async read(
+      @User('userId') userId: number,
+      @Body() body: joinDirectRoom
+    ) {
+      const { roomId } = body;
+
+      await Promise.all([this.chatService.readMessage(userId, roomId)]);
+
+      return "ok";
     }
 }

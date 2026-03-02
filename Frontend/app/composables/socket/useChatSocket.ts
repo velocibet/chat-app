@@ -220,6 +220,18 @@ export const useChatSocket = () => {
     }
   };
 
+  const onUnreadUpdate = (callback: (data: { roomId: number }) => void) => {
+    socketStore.socket?.on('unreadUpdate', callback);
+  };
+
+  const offUnreadUpdate = (callback?: (data: { roomId: number }) => void) => {
+    if (callback) {
+      socketStore.socket?.off('unreadUpdate', callback);
+    } else {
+      socketStore.socket?.off('unreadUpdate');
+    }
+  };
+
   return {
     joinRoom,
     sendMessageToRoom,
@@ -239,6 +251,8 @@ export const useChatSocket = () => {
     offNewMessage,
     offDeletedMessage,
     onUserStatusChanged,
-    offUserStatusChanged
+    offUserStatusChanged,
+    onUnreadUpdate,
+    offUnreadUpdate
   };
 };
