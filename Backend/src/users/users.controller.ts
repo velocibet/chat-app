@@ -237,6 +237,7 @@ export class UsersController {
     
     return user;
   }
+  
 
   // @Get('profile-image/:filename')
   // async getProfileImage(
