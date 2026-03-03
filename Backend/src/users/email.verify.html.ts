@@ -3,7 +3,7 @@ export const useEmailVerifyHtml = (token: string) => {
         <p>Velocibet 서비스를 이용해 주셔서 감사합니다.</p>
 
         <p>아래 버튼을 눌러 이메일 인증을 완료해주세요.</p>
-        <a href="https://dev.velocibet.com/verify?token=${token}">
+        <a href="https://velocibet.com/verify?token=${token}">
           이메일 인증하기
         </a>
 
