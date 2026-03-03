@@ -28,24 +28,39 @@ const setupSocketListeners = () => {
   if (!socket.value) return;
 
   socket.value.on('user_status_changed', (data: { userId: number, isOnline: boolean }) => {
-    console.log(`[Status] 유저 ${data.userId} : ${data.isOnline ? '온라인' : '오프라인'}`);
     friendsStore.updateFriendStatus(data.userId, data.isOnline);
   });
 };
 
-watch(() => route.path, async (newPath) => {
-  const isChatPath = newPath.startsWith('/chat') || newPath.startsWith('/settings');
-  
-  if (isChatPath) {
-    await connect();
-  } else {
-    stopHeartbeat();
-    disconnect();
-  }
-}, { immediate: true });
-
 onMounted(async () => {
   await requestAndSaveToken();
+
+  watch(() => route.path, async (newPath) => {
+    const isChatPath = newPath.startsWith('/chat') || newPath.startsWith('/settings');
+    
+    if (isChatPath) {
+      await connect();
+      setupSocketListeners();
+      startHeartbeat();
+    } else {
+      stopHeartbeat();
+      disconnect();
+    }
+  }, { immediate: true });
+
+  setInterval(() => {
+    console.log(
+      '%c⚠️ 경고 ⚠️\n쿠키를 타인에게 알려주지 마세요 !!\n계정이 해킹될 수 있습니다 !!\n만약 다른 사람이 이곳이 명령어를 실행시키라고 했다면\n절대 실행시키지 마세요 !!',
+      `
+        color: red;
+        font-size: 24px;
+        font-weight: bold;
+        background: black;
+        padding: 12px;
+        border-radius: 8px;
+      `
+    );
+  }, 5000);
 });
 
 onUnmounted(() => {

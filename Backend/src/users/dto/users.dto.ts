@@ -1,4 +1,4 @@
-import { IsEmail, IsNotEmpty, IsNumber, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsNotEmpty, IsNumber, IsString, MinLength, IsOptional, IsBoolean } from 'class-validator';
 
 export class EmailDto {
   @IsEmail()
@@ -16,6 +16,11 @@ export class RegisterDto {
   @IsString({ message: '비밀번호는 문자열이어야 합니다.' })
   @MinLength(8, { message: '비밀번호는 최소 8자 이상이어야 합니다.' })
   password: string;
+
+  /* 개인정보처리방침 동의 여부. 클라이언트에서 체크된 상태여야 합니다. */
+  @IsBoolean({ message: '개인정보처리방침 동의 여부는 true/false 여야 합니다.' })
+  @IsNotEmpty({ message: '개인정보처리방침에 동의해야 합니다.' })
+  privacyAgreement: boolean;
 }
 
 export class LoginDto {

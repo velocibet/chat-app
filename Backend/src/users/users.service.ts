@@ -4,6 +4,7 @@ import { pool } from '../database';
 import { NotFound } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 import { RegisterDto, LoginDto, ChangePasswordDto, DeleteDto } from './dto/users.dto';
+import { RedisService } from 'src/redis/redis.service';
 
 interface LoginLog {
   username: string;
@@ -14,7 +15,9 @@ interface LoginLog {
 
 @Injectable()
 export class UsersService {
-  constructor() {}
+  constructor(
+    private readonly redisService: RedisService
+  ) {}
   
   async createToken(email: string) {
     const token = crypto.randomBytes(32).toString('hex');
@@ -77,7 +80,13 @@ export class UsersService {
    * @returns 생성된 사용자의 ID와 계정명을 반환합니다.
    */
   async register(body: RegisterDto) {
-    const { username, password, email } = body;
+    const { username, password, email, privacyAgreement } = body;
+
+    // 개인정보처리방침에 동의하지 않았다면 가입 불가
+    if (!privacyAgreement) {
+      throw new BadRequestException('개인정보처리방침에 동의해야 회원가입할 수 있습니다.');
+    }
+
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
@@ -305,16 +314,20 @@ export class UsersService {
       [userId]
     );
 
-    if (!rows[0]) return null;
+    if (!rows[0]) throw new UnauthorizedException("권한이 없습니다.");
 
     const user = rows[0];
+
+    const redis = this.redisService.getClient();
+    const result = await redis.exists(`user:online:${userId}`);
+
     const data = {
       userId: user.id,
       username: user.username,
       nickname: user.nickname,
       bio: user.bio,
       profileUrlName: user.profile_url_name,
-      isOnline: false,
+      isOnline: result === 1,
     };
 
     return data;

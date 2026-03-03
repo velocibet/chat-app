@@ -39,9 +39,9 @@ function handleFileChange(event: Event) {
     return
   }
 
-  const maxSize = 2 * 1024 * 1024
+  const maxSize = 5 * 1024 * 1024
   if (selectedFiles[0].size > maxSize) {
-    alert("2MB 이하 파일만 업로드 가능합니다.");
+    alert("5MB 이하 파일만 업로드 가능합니다.");
     target.value = '';
     return
   }
@@ -95,7 +95,7 @@ async function submit() {
             hidden 
             @change="handleFileChange" 
           />
-          <p class="help-text">2MB 이하의 이미지 파일만 가능합니다.</p>
+          <p class="help-text">5MB 이하의 이미지 파일만 가능합니다.</p>
         </div>
 
         <div class="input-section">

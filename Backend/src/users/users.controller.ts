@@ -128,6 +128,7 @@ export class UsersController {
 
     if (file) {
       if (!file.mimetype.startsWith('image/')) throw new BadRequestException('이미지만 가능합니다.');
+      if (file.size > 5 * 1024 * 1024) throw new BadRequestException('5MB 이하 파일만 업로드 가능합니다.');
     }
 
     try {

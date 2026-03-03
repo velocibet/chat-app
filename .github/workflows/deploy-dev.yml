@@ -47,7 +47,7 @@ jobs:
             cd /var/www/chat-app-dev/Backend &&
             npm install &&
             npm run build &&
-            pm2 restart chat-app-dev || pm2 start dist/main.js --name chat-app-dev
+            pm2 restart chat-app-dev || PORT=8100 pm2 start dist/main.js --name chat-app-dev --env production
           "
       
       # 4-1. DB 마이그레이션
@@ -74,5 +74,5 @@ jobs:
             cd /var/www/chat-app-dev/Frontend &&
             npm install &&
             npm run build &&
-            pm2 restart index-dev || pm2 start .output/server/index.mjs --name index-dev
+            pm2 restart index-dev || PORT=3100 pm2 start .output/server/index.mjs --name index-dev --env production
           "

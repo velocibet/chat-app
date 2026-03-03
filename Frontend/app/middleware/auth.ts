@@ -17,7 +17,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     authStore.setUser(userData.data);
   } else {
     authStore.setUser(null);
-    return navigateTo('/login');
+    return router.push('/login');
   }
 
   const friendsData = await friendsApi.getFriends();

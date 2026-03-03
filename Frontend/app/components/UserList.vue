@@ -16,7 +16,7 @@ const unreadCounts = ref<Record<number, number>>({});
 const openedMenuId = ref<number | null>(null);
 const showRoomPopup = ref(false);
 const popupRef = ref<InstanceType<typeof CreateChatRoom> | null>(null);
-const dropdownStyle = ref({});
+const dropdownStyle = ref<Record<string,string>>({});
 let unreadHandler: ((data: { roomId: number }) => void) | null = null;
 
 const { data: roomsData } = await useAsyncData<ApiResponse<ChatroomListItem[]>>('rooms', () => chatRoomApi.getRooms());
@@ -58,14 +58,27 @@ const goToSettings = () => router.push({
   query: { from: encodeURIComponent(route.fullPath) }
 });
 
-function toggleMenu(roomId: number, event: MouseEvent) {
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-  dropdownStyle.value = {
-    position: 'fixed',
-    top: rect.top + 'px',
-    left: rect.right + 'px',
-  };
-  openedMenuId.value = openedMenuId.value === roomId ? null : roomId;
+function toggleMenu(roomId: number, event?: MouseEvent) {
+  if (openedMenuId.value === roomId) {
+    openedMenuId.value = null;
+    return;
+  }
+  openedMenuId.value = roomId;
+  if (event) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    const menuWidth = 140;
+    let leftPos = rect.left;
+    const margin = 10;
+    if (leftPos + menuWidth > window.innerWidth - margin) {
+      leftPos = window.innerWidth - menuWidth - margin;
+      if (leftPos < margin) leftPos = margin;
+    }
+    dropdownStyle.value = {
+      position: 'fixed',
+      top: `${rect.top + rect.height}px`,
+      left: `${leftPos}px`,
+    };
+  }
 }
 
 onMounted(async () => {

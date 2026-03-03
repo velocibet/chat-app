@@ -34,7 +34,8 @@ const isEnd = ref<boolean>(false);
 const selectedUserId = ref<number | null>();
 const isInitialLoading = ref(true);
 const openedMenuId = ref<number | null>(null);
-const dropdownStyle = ref({});
+const dropdownStyle = ref<Record<string,string>>({});
+
 const isInviteModalOpen = ref(false);
 
 let loadMessagesHandler: ((response: any) => void) | null = null;
@@ -73,8 +74,8 @@ function handleFileChange (event: Event) {
   const file = target.files?.[0]
   if (!file) return
 
-  if (file.size > 2 * 1024 * 1024) {
-    alert('파일 크기는 2MB 이하만 가능합니다.')
+  if (file.size > 5 * 1024 * 1024) {
+    alert('파일 크기는 5MB 이하만 가능합니다.')
     return
   }
 
@@ -146,16 +147,32 @@ function getImageUrl(item: any): string {
   return '';
 }
 
-function toggleUserMenu(userId: number, event: MouseEvent) {
-  const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+function toggleUserMenu(userId: number, event?: MouseEvent) {
+  if (openedMenuId.value === userId) {
+    // close
+    openedMenuId.value = null;
+    return;
+  }
 
-  dropdownStyle.value = {
-    position: 'fixed',
-    top: rect.top + 'px',
-    right: rect.right + 'px',
-  };
+  openedMenuId.value = userId;
 
-  openedMenuId.value = openedMenuId.value === userId ? null : userId;
+  if (event) {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    // prevent dropdown from overflowing right edge
+    const menuWidth = 140; // should be >= min-width + padding
+    let leftPos = rect.left;
+    const margin = 10;
+    if (leftPos + menuWidth > window.innerWidth - margin) {
+      leftPos = window.innerWidth - menuWidth - margin;
+      if (leftPos < margin) leftPos = margin;
+    }
+
+    dropdownStyle.value = {
+      position: 'fixed',
+      top: `${rect.top + rect.height}px`,
+      left: `${leftPos}px`,
+    };
+  }
 }
 
 function handleInvited() {
@@ -400,11 +417,13 @@ onUnmounted(() => {
             <span class="ellipsis">{{ user.username }}</span>
           </div>
           <p @click="toggleUserMenu(user.id, $event)" @click.stop>︙</p>
-          <ul v-if="openedMenuId === user.id" :style="dropdownStyle" class="dropdown-menu">
-            <li>
-              <button @click="handleKick(user)" @click.stop>강퇴</button>
-            </li>
-          </ul>
+          <Teleport to="body">
+            <ul v-if="openedMenuId === user.id" class="dropdown-menu" :style="dropdownStyle" @click.stop>
+              <li>
+                <button @click="handleKick(user)" @click.stop>강퇴</button>
+              </li>
+            </ul>
+          </Teleport>
         </div>
       </div>
     </section>

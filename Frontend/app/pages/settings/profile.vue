@@ -38,9 +38,9 @@ function handleFileChange(event: Event) {
     return
   }
 
-  const maxSize = 2 * 1024 * 1024
+  const maxSize = 5 * 1024 * 1024
   if (selectedFiles[0].size > maxSize) {
-    alert("2MB 이하 파일만 업로드 가능합니다.");
+    alert("5MB 이하 파일만 업로드 가능합니다.");
     target.value = '';
     return
   }
@@ -106,7 +106,7 @@ onUnmounted(() => {
             <span>교체</span>
           </div>
         </label>
-        <p class="avatar-tip">사진을 클릭하여 변경 (2MB 이하)</p>
+          <p class="avatar-tip">사진을 클릭하여 변경 (5MB 이하)</p>
         <input type="file" id="avatarInput" name="file" accept="image/*" hidden @change="handleFileChange" />
       </div>
 

@@ -2,6 +2,8 @@ export interface RegisterDto {
   username: string;
   email: string;
   password: string;
+  /* privacy policy agreement must be true for registration */
+  privacyAgreement: boolean;
 }
 
 export interface LoginDto {

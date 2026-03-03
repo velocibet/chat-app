@@ -60,6 +60,7 @@
 }
 
 .message-top {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -176,6 +177,7 @@
 }
 
 .user {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;

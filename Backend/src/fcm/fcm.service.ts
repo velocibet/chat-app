@@ -2,14 +2,14 @@ import * as admin from 'firebase-admin';
 import { Injectable, OnModuleInit } from '@nestjs/common';
 import * as path from 'path';
 import { pool } from '../database';
+import { json } from 'stream/consumers';
 
 @Injectable()
 export class FcmService implements OnModuleInit {
   onModuleInit() {
     if (admin.apps.length === 0) {
-      const serviceAccountPath = path.join(process.cwd(), 'firebase-auth.json');
       admin.initializeApp({
-        credential: admin.credential.cert(serviceAccountPath),
+        credential: admin.credential.cert(JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT!)),
       });
       console.log('✅ Firebase Admin SDK 초기화 완료');
     }

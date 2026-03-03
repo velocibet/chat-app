@@ -152,8 +152,9 @@ li {
 
 .dropdown-menu {
   position: absolute;
-  top: 30px;
-  left: 90%;
+  top: 100%;
+  right: 0;
+  left: auto;
   background-color: #3a3a3a;
   border-radius: 8px;
   overflow: hidden;

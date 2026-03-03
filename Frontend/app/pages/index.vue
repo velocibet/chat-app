@@ -45,7 +45,7 @@ onMounted(() => {
   <div class="default-main">
     <section class="hero-section">
       <div class="hero-content fade-up">
-        <div class="version-badge">v0.2.1-alpha - dev</div>
+        <div class="version-badge">v0.3.0-alpha</div>
         <h1><span class="highlight">빠르고 가볍게</span><br>연결되는 대화</h1>
         <p>Velocibet은 불필요한 무게를 덜어내고 오직 본질에 집중합니다.<br>기기에 상관없이 브라우저만 있다면 지금 바로 시작하세요.</p>
         <div class="hero-btns">

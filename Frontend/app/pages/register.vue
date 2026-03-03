@@ -7,17 +7,25 @@ const router = useRouter();
 const username = ref<string>('');
 const password = ref<string>('');
 const email = ref<string>('');
+const privacyChecked = ref<boolean>(false);
 const isLoading = ref(false);
 
 async function getRegister() {
     if (isLoading.value) return;
+
+    if (!privacyChecked.value) {
+        alert('개인정보처리방침에 동의해주세요.');
+        return;
+    }
+
     isLoading.value = true;
 
     try {
         const res = await userApi.register({
             username: username.value,
             password: password.value,
-            email: email.value
+            email: email.value,
+            privacyAgreement: privacyChecked.value
         });
 
         if (!res.success) {
@@ -68,6 +76,13 @@ async function verifyEmail() {
                 <div class="input-group">
                     <label>비밀번호</label>
                     <input class="auth-input" v-model="password" type="password" placeholder="8자 이상 입력" required />
+                </div>
+
+                <div class="input-group agreement-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" v-model="privacyChecked" />
+                        <span>개인정보처리방침에 동의합니다. <NuxtLink to="/privacy" class="policy-link">(보기)</NuxtLink></span>
+                    </label>
                 </div>
                 
                 <button class="auth-submit" type="submit" :disabled="isLoading">
