@@ -23,7 +23,6 @@ SET row_security = off;
 -- Name: friend_request_status; Type: TYPE; Schema: public; Owner: postgres
 --
 
-
 CREATE TYPE public.friend_request_status AS ENUM (
     'pending',
     'accepted',
