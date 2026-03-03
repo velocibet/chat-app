@@ -29,7 +29,6 @@ CREATE TYPE public.friend_request_status AS ENUM (
     'rejected'
 );
 
-
 ALTER TYPE public.friend_request_status OWNER TO postgres;
 
 --
