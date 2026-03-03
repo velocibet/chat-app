@@ -2,7 +2,7 @@
 -- PostgreSQL database dump
 --
 
-\restrict ZD8vFebgWGyXcT8NfO8YDstijOHccRHM4Ss6PONgWSm2Tlfv3i4f3gsSxuLwNFz
+
 
 -- Dumped from database version 18.1
 -- Dumped by pg_dump version 18.1
@@ -915,5 +915,4 @@ ALTER DEFAULT PRIVILEGES FOR ROLE postgres IN SCHEMA public GRANT ALL ON TABLES 
 -- PostgreSQL database dump complete
 --
 
-\unrestrict ZD8vFebgWGyXcT8NfO8YDstijOHccRHM4Ss6PONgWSm2Tlfv3i4f3gsSxuLwNFz
 
