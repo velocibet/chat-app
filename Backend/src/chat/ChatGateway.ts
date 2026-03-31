@@ -1,15 +1,15 @@
 import { UseGuards, Inject, forwardRef } from '@nestjs/common';
 import { OnGatewayInit, WebSocketServer, WebSocketGateway, SubscribeMessage, MessageBody, ConnectedSocket } from '@nestjs/websockets';
 import { ChatService } from './chat.service';
-import { ChatroomService } from 'src/chatroom/chatroom.service';
+import { ChatroomService } from '../chatroom/chatroom.service';
 import { Server, Socket } from 'socket.io';
 import { joinDirectRoom, sendMessage, previousMessage, deleteMessage } from './dto/chat.dto';
-import { RedisService } from 'src/redis/redis.service';
-import { FcmService } from 'src/fcm/fcm.service';
-import { sessionMiddleware } from '../main';
+import { RedisService } from '../redis/redis.service';
+import { FcmService } from '../fcm/fcm.service';
+import { sessionMiddleware } from '../common/session.config';
 import { socketOk, socketFail } from '../socket.response';
-import { AuthWsGuard } from 'src/auth/guards/AuthWsGuard';
-import { FriendsService } from 'src/friends/friends.service';
+import { AuthWsGuard } from '../auth/guards/AuthWsGuard';
+import { FriendsService } from '../friends/friends.service';
 
 @UseGuards(AuthWsGuard)
 @WebSocketGateway({ cors: {
@@ -22,6 +22,7 @@ import { FriendsService } from 'src/friends/friends.service';
   constructor(
     private readonly chatService: ChatService,
     private readonly redisService: RedisService,
+    @Inject(forwardRef(() => ChatroomService))
     private readonly chatroomService: ChatroomService,
     private readonly friendsService: FriendsService,
     private readonly fcmService: FcmService,

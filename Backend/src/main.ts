@@ -4,6 +4,7 @@ import { AppModule } from './app.module';
 import { TransformInterceptor } from './transform.interceptor';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { ThrottlerExceptionFilter } from './throttler-exception.filter';
+import { sessionMiddleware } from './common/session.config';
 import * as express from 'express';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
@@ -14,8 +15,6 @@ import Redis from 'ioredis';
 
 const cookieParser = require('cookie-parser');
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
-
-export let sessionMiddleware: any;
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -53,19 +52,6 @@ async function bootstrap() {
       },
     }),
   );
-
-  sessionMiddleware = session({
-    store: redisStore,
-    secret: process.env.SESSION_SECRET!,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.SECURE === 'true',
-      sameSite: (process.env.SAMESITE as any) || 'lax',
-      maxAge: 1000 * 60 * 60 * 12,
-    },
-  });
 
   app.use(cookieParser());
   app.use(sessionMiddleware);

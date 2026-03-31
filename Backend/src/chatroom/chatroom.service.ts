@@ -1,12 +1,12 @@
 import { Injectable, Inject, forwardRef, HttpException, NotFoundException, InternalServerErrorException, ForbiddenException, BadRequestException, UnauthorizedException } from '@nestjs/common';
-import { ChatGateway } from 'src/chat/ChatGateway';
+import { ChatGateway } from '../chat/ChatGateway';
 import { pool } from '../database';
 
 @Injectable()
 export class ChatroomService {
     constructor(
         @Inject(forwardRef(() => ChatGateway))
-        private readonly ChatGateway: ChatGateway
+        private readonly chatGateway: ChatGateway
     ) {}
 
     async create(type: string, userId: number, member?: number, membersArray?: number[], title?: string) {
@@ -89,7 +89,7 @@ export class ChatroomService {
             const memberIds = membersRes.rows.map(r => r.user_id);
 
             for (const uid of memberIds) {
-                this.ChatGateway.updateRoomList(uid);
+                this.chatGateway.updateRoomList(uid);
             }
 
             return {
@@ -273,7 +273,7 @@ export class ChatroomService {
             const memberIds = membersRes.rows.map(r => r.user_id);
 
             for (const uid of memberIds) {
-                this.ChatGateway.updateRoomList(uid);
+                this.chatGateway.updateRoomList(uid);
             }
 
             await client.query('COMMIT');
