@@ -1,0 +1,52 @@
+{
+    "migration": {
+        "sourceClient": {
+            "host": "localhost",
+            "port": 5432,
+            "database": "velocibet",
+            "user": "postgres",
+            "password": "0206",
+            "applicationName": "pg-diff-cli",
+            "ssl": false
+        },
+        "targetClient": {
+            "host": "localhost",
+            "port": 5433,
+            "database": "velocibet_dev",
+            "user": "postgres",
+            "password": "0206",
+            "applicationName": "pg-diff-cli",
+            "ssl": false
+        },
+        "compareOptions": {
+            "author": "",
+            "getAuthorFromGit": false,
+            "outputDirectory": "db_migration",
+            "schemaCompare": {
+                "namespaces": [],
+                "dropMissingTable": true,
+                "dropMissingView": true,
+                "dropMissingFunction": true,
+                "dropMissingAggregate": true,
+                "roles": []
+            },
+            "dataCompare": {
+                "enable": true,
+                "tables": [
+                    {
+                        "tableName": "my_table_example",
+                        "tableSchema": "public",
+                        "tableKeyFields": [
+                            "id"
+                        ]
+                    }
+                ]
+            }
+        },
+        "migrationOptions": {
+            "patchesDirectory": "db_migration",
+            "historyTableName": "migrations",
+            "historyTableSchema": "public"
+        }
+    }
+}

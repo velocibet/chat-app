@@ -1,0 +1,78 @@
+name: Deploy App
+
+on:
+  push:
+    branches:
+      - develop
+
+    paths-ignore:
+      - 'README.md'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. 레포지토리 체크아웃
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      # 2. SSH 에이전트 시작
+      - name: Start ssh-agent
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      # 3. 서버 호스트 키 등록
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Create directories on server
+        run: |
+            ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "mkdir -p /var/www/chat-app-dev/Backend /var/www/chat-app-dev/Frontend"
+
+      # 4. Backend 배포 (클린 포함)
+      - name: Deploy Backend
+        run: |
+          # 배포 디렉토리 초기화
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "rm -rf /var/www/chat-app-dev/Backend/*"
+          
+          # 새로운 파일 복사
+          rsync -avz ./Backend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Backend/
+          
+          # 빌드 + PM2 재시작
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
+            cd /var/www/chat-app-dev/Backend &&
+            npm install &&
+            npm run build &&
+            pm2 restart chat-app-dev || PORT=8100 pm2 start dist/main.js --name chat-app-dev --env production
+          "
+      
+      # 4-1. DB 마이그레이션
+      - name: Run DB Migrations
+        run: |
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
+            cd /var/www/chat-app-dev/Backend &&
+            export DATABASE_URL='${{ secrets.DATABASE_URL_DEV }}' &&
+            npx node-pg-migrate up
+          "
+
+      
+      # 5. Frontend 배포 (클린 포함)
+      - name: Deploy Frontend
+        run: |
+          # 배포 디렉토리 초기화
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "rm -rf /var/www/chat-app-dev/Frontend/*"
+          
+          # 새로운 파일 복사
+          rsync -avz ./Frontend/ ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/var/www/chat-app-dev/Frontend/
+          
+          # 빌드 + PM2 재시작
+          ssh ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} "
+            cd /var/www/chat-app-dev/Frontend &&
+            npm install &&
+            npm run build &&
+            pm2 restart index-dev || PORT=3100 pm2 start .output/server/index.mjs --name index-dev --env production
+          "
