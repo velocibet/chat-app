@@ -1,11 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { ChatGateway } from 'src/chat/ChatGateway';
 import { FriendsService } from './friends.service';
 import { FriendRequestDto, HandleFriendRequestDto } from './dto/friends.dto';
 import { User } from 'src/decorators/user.decorator';
+import { HmacGuard } from 'src/guards/HmacGuard';
 
 @Controller('friends')
+@UseGuards(HmacGuard)
 export class FriendsController {
   constructor(
     private readonly friendsService: FriendsService,

@@ -6,6 +6,10 @@ export const useUserApi = () => {
     sendVerifyEmail: (email: string) =>
       api.post('/email/send', { email }),
 
+    /** [GET] 회원가입 세션 시드 발급 */
+    getRegistrationSeed: (clientId: string) =>
+      api.get<{serverSeed: string}>('/registration-seed', { params: { clientId } }),
+
     /** [POST] 이메일 인증 토큰 검증 */
     verifyEmailToken: (token: string) =>
       api.post<{ message: string }>('/email/verify', { token }),
@@ -27,6 +31,9 @@ export const useUserApi = () => {
 
     /** [PATCH] 비밀번호 변경 */
     changePassword: (body: ChangePasswordDto) => api.patch('/password', body),
+
+    /** [PATCH] 개인키 갱신 (Key Rotation) */
+    updatePrivateKey: (body: any) => api.patch('/private-key', body),
 
     /** [DELETE] 회원 탈퇴 */
     deleteAccount: (body: DeleteDto) => api.delete('/', { body }),

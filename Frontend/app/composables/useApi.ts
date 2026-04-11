@@ -3,21 +3,24 @@ import type { ApiResponse } from '~/types/response';
 export const useApi = (domain: string = '') => {
   const config = useRuntimeConfig();
   const headers = useRequestHeaders(['cookie']);
+  const HMAC_SECRET = config.public.hmacSecret || 'DefaultHmacSecret';
 
   const api = $fetch.create({
     baseURL: (`${config.public.apiBase}${domain}`),
     credentials: 'include',
 
     onRequest({ options }) {
-      if (import.meta.server) {
-        const cookie = headers.cookie;
+      const hmacHeaders = generateHmacHeaders(options.body, HMAC_SECRET);
+      const newHeaders = new Headers(options.headers);
 
-        options.headers = {
-          ...(options.headers ?? {}),
-          ...(cookie ? { cookie } : {}),
-        } satisfies HeadersInit;
+      newHeaders.set('x-hmac-signature', hmacHeaders['x-hmac-signature']);
+      newHeaders.set('x-hmac-timestamp', hmacHeaders['x-hmac-timestamp']);
+
+      if (import.meta.server && headers.cookie) {
+        newHeaders.set('cookie', headers.cookie);
       }
 
+      options.headers = newHeaders;
       options.credentials = 'include';
     }
   });

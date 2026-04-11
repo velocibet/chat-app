@@ -8,7 +8,7 @@ import { RedisService } from '../redis/redis.service';
 import { FcmService } from '../fcm/fcm.service';
 import { sessionMiddleware } from '../common/session.config';
 import { socketOk, socketFail } from '../socket.response';
-import { AuthWsGuard } from '../auth/guards/AuthWsGuard';
+import { AuthWsGuard } from '../guards/AuthWsGuard';
 import { FriendsService } from '../friends/friends.service';
 
 @UseGuards(AuthWsGuard)

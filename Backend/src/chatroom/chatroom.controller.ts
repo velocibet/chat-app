@@ -1,4 +1,4 @@
-import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete, Body, Req, Res, Param, ValidationPipe , BadRequestException, InternalServerErrorException, UnauthorizedException, NotFoundException, Patch, ParseIntPipe } from '@nestjs/common';
+import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete, Body, Req, Res, Param, ValidationPipe , BadRequestException, InternalServerErrorException, UnauthorizedException, NotFoundException, Patch, ParseIntPipe, UseGuards } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ChatroomDto } from './dto/chatroom.dto';
 import type { Request, Response } from 'express';
@@ -10,8 +10,10 @@ import { DeleteObjectCommandOutput, DeleteObjectCommand, GetObjectCommandOutput,
 import { s3 } from '../bucket';
 import sharp from 'sharp';
 import { socketOk } from 'src/socket.response';
+import { HmacGuard } from 'src/guards/HmacGuard';
 
 @Controller('chatroom')
+@UseGuards(HmacGuard)
 export class ChatroomController {
     constructor(
         private readonly ChatroomService: ChatroomService,

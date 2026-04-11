@@ -1,24 +1,21 @@
 import { ValidationPipe, BadRequestException } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
 import { TransformInterceptor } from './transform.interceptor';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { ThrottlerExceptionFilter } from './throttler-exception.filter';
 import { sessionMiddleware } from './common/session.config';
 import * as express from 'express';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-
+import cookieParser from 'cookie-parser';
 import RedisStore from "connect-redis";
-import session from "express-session";
 import Redis from 'ioredis'; 
 
-const cookieParser = require('cookie-parser');
-dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const expressApp = app.getHttpAdapter().getInstance() as express.Express;
+  const configService = app.get(ConfigService);
 
   const redisClient = new Redis({
     host: '127.0.0.1',
@@ -58,7 +55,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
 
-  await app.listen(process.env.PORT || 3000);
+  await app.listen(configService.get<number>('PORT', 8000));
 }
 
 bootstrap();

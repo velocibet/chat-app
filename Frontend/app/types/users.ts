@@ -2,8 +2,14 @@ export interface RegisterDto {
   username: string;
   email: string;
   password: string;
-  /* privacy policy agreement must be true for registration */
   privacyAgreement: boolean;
+
+  // --- E2EE 보안 관련 필드 ---
+  publicKey: string;
+  encryptedPrivateKey: string;
+  encryptionSalt: string;
+  encryptionIv: string;
+  clientId: string
 }
 
 export interface LoginDto {
@@ -34,4 +40,13 @@ export interface LoginReponse {
   userId: number;
   username: string;
   nickname: string;
+
+  // --- 개인키 복구 관련 값 ---
+  security: {
+    publicKey: string;
+    encryptedPrivateKey: string;
+    encryptionSalt: string;
+    encryptionIv: string;
+    serverSeed: string;
+  };
 }

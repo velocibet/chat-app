@@ -1,7 +1,8 @@
-import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete,  Body, Req, Res, Param, ParseIntPipe , NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException, Patch } from '@nestjs/common';
+import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete,  Body, Req, Res, Param, ParseIntPipe , NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException, Patch, UseGuards, Query } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { ConfigService } from '@nestjs/config';
 import { UsersService } from './users.service';
-import { EmailDto, RegisterDto, LoginDto, UpdateDto, ChangePasswordDto, DeleteDto, PushTokenDto } from './dto/users.dto';
+import { EmailDto, RegisterDto, LoginDto, UpdateDto, ChangePasswordDto, DeleteDto, UpdatePrivateKeyDto, PushTokenDto } from './dto/users.dto';
 import type { Request, Response } from 'express';
 import { User } from 'src/decorators/user.decorator';
 import { SessionData } from 'src/decorators/session.decorator';
@@ -13,21 +14,34 @@ import * as path from 'path';
 // import { Readable } from 'stream';
 import { Resend } from 'resend';
 import { useEmailVerifyHtml } from './email.verify.html';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { HmacGuard } from 'src/guards/HmacGuard';
 
 @Controller('users')
+@UseGuards(HmacGuard)
 export class UsersController {
   constructor(
-    private readonly usersService: UsersService
-  ) {}
+    private readonly usersService: UsersService,
+    private configService: ConfigService
+  ) {
+    this.resend = new Resend(this.configService.get<string>('RESEND_API_KEY'));
+  }
+  
+  private readonly resend: Resend;
+
+  @Get('registration-seed')
+  async getRegistrationSeed(@Query('clientId') clientId: string) {
+    if (!clientId) {
+      throw new BadRequestException('clientId는 필수 parameter입니다.');
+    }
+    return await this.usersService.generateSeed(clientId);
+  }
 
   @Post('email/send')
   async send(@Body() body: EmailDto) {
     const { email } = body;
     const token = await this.usersService.createToken(email);
     
-    await resend.emails.send({
+    await this.resend.emails.send({
       from: 'Velocibet 벨로시벳 <no-reply@velocibet.com>',
       to: [email],
       subject: '이메일 인증을 완료해주세요',
@@ -191,6 +205,11 @@ export class UsersController {
   @Patch('password')
   async change(@User('userId') userId: number, @Body() body : ChangePasswordDto) {
     return await this.usersService.changePassword(userId, body);
+  }
+
+  @Patch('private-key')
+  async updatePrivateKey(@User('userId') userId: number, @Body() body: UpdatePrivateKeyDto) {
+    return await this.usersService.updatePrivateKey(userId, body);
   }
 
   @Delete()

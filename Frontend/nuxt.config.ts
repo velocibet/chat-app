@@ -6,7 +6,8 @@ export default defineNuxtConfig({
   imports: {
     dirs: [
       'composables/**',
-      'types/**'
+      'types/**',
+      'utils/**'
     ]
   },
   app: {
@@ -64,6 +65,7 @@ export default defineNuxtConfig({
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE,
       wsBase: process.env.NUXT_PUBLIC_WS_BASE,
+      hmacSecret: process.env.HMAC_SECRET,
       imgBase: process.env.NUXT_PUBLIC_IMG_BASE,
       vapidKey: process.env.NUXT_PUBLIC_VAPID_KEY,
       firebaseApiKey: process.env.NUXT_PUBLIC_FIREBASE_API_KEY,

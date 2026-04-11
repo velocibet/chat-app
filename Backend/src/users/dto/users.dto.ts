@@ -17,10 +17,29 @@ export class RegisterDto {
   @MinLength(8, { message: '비밀번호는 최소 8자 이상이어야 합니다.' })
   password: string;
 
-  /* 개인정보처리방침 동의 여부. 클라이언트에서 체크된 상태여야 합니다. */
-  @IsBoolean({ message: '개인정보처리방침 동의 여부는 true/false 여야 합니다.' })
+  @IsBoolean({ message: '개인정보처리방침 동의 여부는 true 또는 false 여야 합니다.' })
   @IsNotEmpty({ message: '개인정보처리방침에 동의해야 합니다.' })
   privacyAgreement: boolean;
+
+  @IsString({ message: '공개키 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '공개키는 필수 항목입니다.' })
+  publicKey: string;
+
+  @IsString({ message: '암호화된 개인키 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '개인키 보따리는 필수 항목입니다.' })
+  encryptedPrivateKey: string;
+
+  @IsString({ message: '암호화 Salt 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '보안 소금값은 필수 항목입니다.' })
+  encryptionSalt: string;
+
+  @IsString({ message: '암호화 IV 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '보안 IV값은 필수 항목입니다.' })
+  encryptionIv: string;
+
+  @IsString({ message: 'clientId는 문자열이어야 합니다.' })
+  @IsNotEmpty({ message: 'clientId는 필수 항목입니다.' })
+  clientId: string;
 }
 
 export class LoginDto {
@@ -59,6 +78,24 @@ export class ChangePasswordDto {
 export class DeleteDto {
   @IsString({ message: "비밀번호를 입력하세요." })
   currentPassword : string;
+}
+
+export class UpdatePrivateKeyDto {
+  @IsString({ message: '공개키 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '공개키는 필수 항목입니다.' })
+  publicKey: string;
+
+  @IsString({ message: '암호화된 개인키 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '개인키 보따리는 필수 항목입니다.' })
+  encryptedPrivateKey: string;
+
+  @IsString({ message: '암호화 Salt 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '보안 소금값은 필수 항목입니다.' })
+  encryptionSalt: string;
+
+  @IsString({ message: '암호화 IV 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '보안 IV값은 필수 항목입니다.' })
+  encryptionIv: string;
 }
 
 export class PushTokenDto {
