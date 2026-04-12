@@ -1,4 +1,4 @@
-import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete,  Body, Req, Res, Param, ParseIntPipe , NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException, Patch, UseGuards, Query } from '@nestjs/common';
+import { UseInterceptors, UploadedFile, Controller, Get, Post, Delete,  Body, Req, Res, Param, ParseIntPipe , NotFoundException, BadRequestException, InternalServerErrorException, UnauthorizedException, Patch, UseGuards, Query, ParseUUIDPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from './users.service';
@@ -28,14 +28,6 @@ export class UsersController {
   
   private readonly resend: Resend;
 
-  @Get('registration-seed')
-  async getRegistrationSeed(@Query('clientId') clientId: string) {
-    if (!clientId) {
-      throw new BadRequestException('clientId는 필수 parameter입니다.');
-    }
-    return await this.usersService.generateSeed(clientId);
-  }
-
   @Post('email/send')
   async send(@Body() body: EmailDto) {
     const { email } = body;
@@ -60,13 +52,29 @@ export class UsersController {
     return checkMessage;
   }
 
+  @Get('registration-seed')
+  async getRegistrationSeed(
+    @Query('clientId', new ParseUUIDPipe())
+    clientId: string
+  ) {
+    if (!clientId) {
+      throw new BadRequestException('clientId를 입력하지 않았거나 안전하지 않은 값입니다.');
+    }
+    return await this.usersService.generateSeed(clientId);
+  }
+
   @Post('register')
-  async register(@Body() body : RegisterDto) {
+  async register(
+    @Body() body : RegisterDto
+  ) {
     return await this.usersService.register(body);
   }
 
   @Post('login')
-  async login(@Body() body : LoginDto, @Req() req: Request) {
+  async login(
+    @Body() body : LoginDto,
+    @Req() req: Request
+  ) {
     const ip = req.headers['x-forwarded-for']?.toString().split(',')[0] || req.ip;
     const agent = req.headers['user-agent']!;
 
@@ -76,7 +84,8 @@ export class UsersController {
       req.session.user = {
           userId: result.userId,
           username: result.username,
-          nickname: result.nickname
+          nickname: result.nickname,
+          serverSeed: result.security.newServerSeed
       }
 
       this.usersService.insertLoginLog({ username: result.username, ip: ip ?? 'unknown', agent, success: 1 })

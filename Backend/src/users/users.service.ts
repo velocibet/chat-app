@@ -80,11 +80,18 @@ export class UsersService {
    * @returns 생성된 사용자의 ID와 계정명을 반환합니다.
    */
   async register(body: RegisterDto) {
-    const { username, password, email, privacyAgreement, publicKey, encryptedPrivateKey, encryptionSalt, encryptionIv, clientId } = body;
+    const {
+      // 유저 정보 값
+      username, password, email, privacyAgreement,
+      // 암호화 관련 값
+      publicKey, encryptedPrivateKey, encryptedServerSeed, encryptionSalt, encryptionIv, seedEncryptionIv,
+      // 유저 식별 값
+      clientId
+    } = body;
 
     // 개인정보처리방침에 동의하지 않았다면 가입 불가
     if (!privacyAgreement) {
-      throw new BadRequestException('개인정보처리방침에 동의해야 회원가입할 수 있습니다.');
+      throw new BadRequestException('개인정보처리방침에 동의해야 가입할 수 있습니다.');
     }
 
     // clientId로부터 임시 시드 검증
@@ -115,7 +122,9 @@ export class UsersService {
       if (existingEmail.length > 0) throw new ConflictException('이미 사용 중인 이메일입니다.');
 
       const { rows: existingVerify } = await client.query(`
-        SELECT email, used_at FROM email_verifications WHERE email = $1
+        SELECT email, used_at
+        FROM email_verifications
+        WHERE email = $1
       `, [email])
 
       if (existingVerify.length < 1 || !existingVerify[0].used_at) throw new UnauthorizedException("이메일 인증을 완료해주세요.");
@@ -131,7 +140,7 @@ export class UsersService {
           password,
           email
           ) VALUES ($1, $2, $3, $4)
-          RETURNING id`,
+          RETURNING id, user_id`,
         [
           username,
           username,
@@ -140,7 +149,10 @@ export class UsersService {
         ]
       );
 
-      const newUserId = userResult.rows[0].id;
+      // const newUserId = userResult.rows[0].id;
+
+      const newInternalId = userResult.rows[0].id;
+      const newUserUuid = userResult.rows[0].user_id;
 
       await client.query(
         `INSERT INTO user_security_keys (
@@ -148,19 +160,23 @@ export class UsersService {
           public_key, 
           encrypted_private_key, 
           encryption_salt, 
-          encryption_iv
-        ) VALUES ($1, $2, $3, $4, $5)`,
+          encryption_iv,
+          encrypted_server_seed,
+          seed_encryption_iv
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
-          newUserId,
+          newInternalId,
           publicKey,
           encryptedPrivateKey,
           encryptionSalt,
-          encryptionIv
+          encryptionIv,
+          encryptedServerSeed,
+          seedEncryptionIv
         ]
       );
 
       // serverSeed는 Redis에서만 임시로 관리 (TTL 없음, 계정 당 1개 유지)
-      const sessionSeedKey = `session_seed:${newUserId}`;
+      const sessionSeedKey = `session_seed:${newUserUuid}`;
       await redis.set(sessionSeedKey, tempSeed);
       
       // 등록용 임시 시드 삭제
@@ -168,7 +184,7 @@ export class UsersService {
 
       await client.query('COMMIT');
       return {
-        userId: newUserId,
+        userId: newUserUuid,
         username: username,
         serverSeed: tempSeed
       };
@@ -191,12 +207,14 @@ export class UsersService {
    */
   async login(body: LoginDto) {
     const { username, password } = body;
+    const redis = this.redisService.getClient();
 
     // 유저 정보와 보안 키 정보를 JOIN으로 한꺼번에 가져옴
     const { rows: users } = await pool.query(
       `SELECT 
           u.id, u.username, u.nickname, u.password,
-          sk.public_key, sk.encrypted_private_key, sk.encryption_salt, sk.encryption_iv
+          sk.public_key, sk.encrypted_private_key, sk.encryption_salt, sk.encryption_iv,
+          sk.encrypted_server_seed, sk.seed_encryption_iv
       FROM users u
       LEFT JOIN user_security_keys sk ON u.id = sk.user_id
       WHERE u.username = $1`,
@@ -204,35 +222,43 @@ export class UsersService {
     );
 
     if (users.length === 0) {
-      throw new BadRequestException('아이디 또는 비밀번호가 올바르지 않습니다.');
+      throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
     }
 
     const user = users[0];
 
-    // 비밀번호 검증
+    // 비밀번호 검증 (Argon2)
     const passwordValid = await argon2.verify(user.password, password);
     if (!passwordValid) {
-      throw new BadRequestException('아이디 또는 비밀번호가 올바르지 않습니다.');
+      throw new UnauthorizedException('아이디 또는 비밀번호가 올바르지 않습니다.');
     }
 
-    // ===== Key Rotation =====
-    const redis = this.redisService.getClient();
+    // 기존 시드(oldServerSeed) 및 새 시드(newServerSeed) 처리
     const sessionSeedKey = `session_seed:${user.id}`;
+    const oldServerSeed = await redis.get(sessionSeedKey);
     
-    // 1. 기존 serverSeed를 oldServerSeed로 가져옴
-    let oldServerSeed = await redis.get(sessionSeedKey);
-    
-    // 2. 혹시 Redis에 없으면 백업(IndexedDB)에서 복구할 수 있도록 명시
-    if (!oldServerSeed) {
-      // 클라이언트가 IndexedDB에서 복구하도록 처리
-      oldServerSeed = null; // null을 반환해서 클라이언트가 Handle함
-    }
-
-    // 3. 새로운 serverSeed 생성
+    // 새 시드 생성
     const newServerSeed = crypto.randomBytes(32).toString('hex');
-    
-    // 4. Redis에 새 serverSeed 저장 (TTL 없음, 다음 로그인까지 유지)
     await redis.set(sessionSeedKey, newServerSeed);
+
+    // 고유 세션 아이디 생성 (UUID)
+    const sessionId = crypto.randomUUID();
+    const sessionKey = `session:${sessionId}`;
+
+    // Redis에 세션 데이터 저장 (7일 만료)
+    const sessionData = {
+      userId: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      serverSeed: newServerSeed,
+    };
+
+    await redis.set(
+      sessionKey, 
+      JSON.stringify(sessionData), 
+      'EX', 
+      60 * 60 * 24 * 7
+    );
 
     return {
       success: true,
@@ -240,14 +266,16 @@ export class UsersService {
       username: user.username,
       nickname: user.nickname,
 
-      // --- 개인키 관련 값 ---
+      // 클라이언트가 개인키를 복구하고 재암호화(Key Rotation)할 수 있도록 재료 전달
       security: {
         publicKey: user.public_key,
         encryptedPrivateKey: user.encrypted_private_key,
         encryptionSalt: user.encryption_salt,
         encryptionIv: user.encryption_iv,
-        oldServerSeed: oldServerSeed, // 기존 시드 (복호화용)
-        newServerSeed: newServerSeed  // 새 시드 (재암호화용)
+        encryptedServerSeed: user.encrypted_server_seed,
+        seedEncryptionIv: user.seed_encryption_iv,
+        oldServerSeed: oldServerSeed,
+        newServerSeed: newServerSeed
       }
     };
   }
@@ -261,7 +289,9 @@ export class UsersService {
     const redis = this.redisService.getClient();
     const serverSeed = crypto.randomBytes(32).toString('hex');
     const tempSeedKey = `temp_seed:${clientId}`;
-    const expirationSeconds = 600; // 10분
+
+    // 10분 TLS 제한
+    const expirationSeconds = 600;
 
     await redis.set(tempSeedKey, serverSeed, 'EX', expirationSeconds);
 

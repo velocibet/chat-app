@@ -6,14 +6,12 @@ export function hexToUint8Array(hex: string): Uint8Array {
   return bytes;
 }
 
-function arrayToBase64(uint8Array: Uint8Array): string {
+export function arrayToBase64(uint8Array: Uint8Array): string {
   const binaryString = Array.from(uint8Array)
     .map((byte: number) => String.fromCharCode(byte))
     .join('');
   return window.btoa(binaryString);
 }
-
-export { arrayToBase64 };
 
 async function saveToDB(data: any) {
   const request = indexedDB.open("SecureMessengerDB", 1);
@@ -89,6 +87,7 @@ export async function generateAndLockKeysWithServer(password: string, serverSeed
 
   const salt = window.crypto.getRandomValues(new Uint8Array(16));
   const iv = window.crypto.getRandomValues(new Uint8Array(12));
+  const seedIv = window.crypto.getRandomValues(new Uint8Array(12));
   
   const masterKey = await deriveMasterKey(password, salt, serverSeed);
 
@@ -100,18 +99,29 @@ export async function generateAndLockKeysWithServer(password: string, serverSeed
     exportedPrivateKey
   );
 
+  const encryptedServerSeed = await window.crypto.subtle.encrypt(
+    { name: "AES-GCM", iv: seedIv },
+    masterKey,
+    serverSeed as BufferSource,
+  );
+
   const exportedPublicKey = await window.crypto.subtle.exportKey("spki", keyPair.publicKey);
 
+  // 데이터 인코딩 후 전송
   const publicKeyB64 = arrayToBase64(new Uint8Array(exportedPublicKey));
   const encryptedPrivateKeyB64 = arrayToBase64(new Uint8Array(encryptedPrivateKey));
+  const encryptedServerSeedB64 = arrayToBase64(new Uint8Array(encryptedServerSeed));
   const saltB64 = arrayToBase64(salt);
   const ivB64 = arrayToBase64(iv);
+  const seedIvB64 = arrayToBase64(seedIv);
 
   const result = {
     publicKey: publicKeyB64,
     encryptedPrivateKey: encryptedPrivateKeyB64,
+    encryptedServerSeed: encryptedServerSeedB64,
     salt: saltB64,
     iv: ivB64,
+    seedIv: seedIvB64,
   };
   
   await saveToDB(result);

@@ -29,6 +29,10 @@ export class RegisterDto {
   @IsNotEmpty({ message: '개인키 보따리는 필수 항목입니다.' })
   encryptedPrivateKey: string;
 
+  @IsString({ message: '암호화된 서버 시드 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '암호화된 서버 시드는 필수 항목입니다.' })
+  encryptedServerSeed: string;
+
   @IsString({ message: '암호화 Salt 형식이 올바르지 않습니다.' })
   @IsNotEmpty({ message: '보안 소금값은 필수 항목입니다.' })
   encryptionSalt: string;
@@ -36,6 +40,10 @@ export class RegisterDto {
   @IsString({ message: '암호화 IV 형식이 올바르지 않습니다.' })
   @IsNotEmpty({ message: '보안 IV값은 필수 항목입니다.' })
   encryptionIv: string;
+
+  @IsString({ message: '시드 암호화 IV 형식이 올바르지 않습니다.' })
+  @IsNotEmpty({ message: '시드 보안 IV값은 필수 항목입니다.' })
+  seedEncryptionIv: string;
 
   @IsString({ message: 'clientId는 문자열이어야 합니다.' })
   @IsNotEmpty({ message: 'clientId는 필수 항목입니다.' })

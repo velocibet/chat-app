@@ -23,27 +23,18 @@ async function getRegister() {
     isLoading.value = true;
 
     try {
-        console.log('[Register] Step 1: Creating clientId...');
         const clientId = crypto.randomUUID();
-        console.log('[Register] clientId:', clientId);
         
-        console.log('[Register] Step 2: Getting registration seed...');
         const seedRes = await userApi.getRegistrationSeed(clientId);
         if (!seedRes.data?.serverSeed) {
             alert('시드 발급에 실패했습니다. 다시 시도해주세요.');
             return;
         }
-        console.log('[Register] Seed received. Length:', seedRes.data.serverSeed.length);
         
-        console.log('[Register] Step 3: Converting hex to Uint8Array...');
         const serverSeed = hexToUint8Array(seedRes.data.serverSeed);
-        console.log('[Register] Seed converted. Length:', serverSeed.length);
         
-        console.log('[Register] Step 4: Generating and locking keys...');
         const keyData = await generateAndLockKeysWithServer(password.value, serverSeed);
-        console.log('[Register] Keys generated and locked');
-
-        console.log('[Register] Step 5: Sending register request...');
+        
         const res = await userApi.register({
             username: username.value,
             password: password.value,
@@ -53,8 +44,10 @@ async function getRegister() {
             // 암호화 관련 값
             publicKey: keyData.publicKey,
             encryptedPrivateKey: keyData.encryptedPrivateKey,
+            encryptedServerSeed: keyData.encryptedServerSeed,
             encryptionSalt: keyData.salt,
             encryptionIv: keyData.iv,
+            seedEncryptionIv: keyData.seedIv,
             clientId: clientId
         });
 
@@ -66,11 +59,7 @@ async function getRegister() {
         alert(res.message);
         router.push('/login');
     } catch (error) {
-        console.error('[Register] Error:', error);
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        const errorStack = error instanceof Error ? error.stack : 'No stack trace';
-        console.error('[Register] Stack:', errorStack);
-        alert('회원가입 중 오류가 발생했습니다: ' + errorMessage);
+        alert('회원가입 중 오류가 발생했습니다');
     } finally {
         isLoading.value = false;
     }
